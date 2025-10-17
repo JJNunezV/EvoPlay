@@ -137,3 +137,41 @@ nav a:hover {
 .logout-btn:hover {
   text-decoration: underline;
 }
+
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 2rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 2rem;
+}
+
+.widget {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.widget-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.scorer-item {
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.scorer-item strong {
+    margin-left: auto;
+}

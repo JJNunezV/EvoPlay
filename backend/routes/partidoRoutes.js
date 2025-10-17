@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Partido = require('../models/partidoModel');
-const Equipo = require('../models/equipoModel'); // <-- Esta es la línea que probablemente faltaba
+const Equipo = require('../models/equipoModel');
 
 // GET: Obtener todos los partidos
 router.get('/', async (req, res) => {
@@ -15,20 +15,31 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST: Crear un nuevo partido
-router.post('/', async (req, res) => {
-  const nuevoPartido = new Partido({
-    equipoLocal: req.body.equipoLocal,
-    equipoVisitante: req.body.equipoVisitante,
-    golesLocal: req.body.golesLocal,
-    golesVisitante: req.body.golesVisitante,
-    fecha: req.body.fecha
-  });
+// GET: Obtener los próximos 5 partidos
+router.get('/proximos', async (req, res) => {
   try {
-    const partidoGuardado = await nuevoPartido.save();
-    res.status(201).json(partidoGuardado);
+    const proximosPartidos = await Partido.find({ fecha: { $gte: new Date() } })
+      .sort({ fecha: 1 })
+      .limit(5)
+      .populate('equipoLocal', 'nombre logoUrl')
+      .populate('equipoVisitante', 'nombre logoUrl');
+    res.json(proximosPartidos);
   } catch (error) {
-    res.status(400).json({ message: 'Error al crear el partido', error: error.message });
+    res.status(500).json({ message: 'Error al obtener próximos partidos' });
+  }
+});
+
+// GET: Obtener los últimos 5 partidos jugados
+router.get('/recientes', async (req, res) => {
+  try {
+    const partidosRecientes = await Partido.find({ fecha: { $lt: new Date() } })
+      .sort({ fecha: -1 })
+      .limit(5)
+      .populate('equipoLocal', 'nombre logoUrl')
+      .populate('equipoVisitante', 'nombre logoUrl');
+    res.json(partidosRecientes);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener partidos recientes' });
   }
 });
 
@@ -40,6 +51,7 @@ router.get('/standings', async (req, res) => {
     const stats = {};
     teams.forEach(team => {
       stats[team._id] = {
+        _id: team._id,
         nombre: team.nombre, logoUrl: team.logoUrl,
         PJ: 0, PG: 0, PE: 0, PP: 0,
         GF: 0, GC: 0, DG: 0, PTS: 0
@@ -80,6 +92,24 @@ router.get('/standings', async (req, res) => {
     res.json(standings);
   } catch (error) {
     res.status(500).json({ message: 'Error al calcular la tabla', error: error.message });
+  }
+});
+
+
+// POST: Crear un nuevo partido
+router.post('/', async (req, res) => {
+  const nuevoPartido = new Partido({
+    equipoLocal: req.body.equipoLocal,
+    equipoVisitante: req.body.equipoVisitante,
+    golesLocal: req.body.golesLocal,
+    golesVisitante: req.body.golesVisitante,
+    fecha: req.body.fecha
+  });
+  try {
+    const partidoGuardado = await nuevoPartido.save();
+    res.status(201).json(partidoGuardado);
+  } catch (error) {
+    res.status(400).json({ message: 'Error al crear el partido', error: error.message });
   }
 });
 

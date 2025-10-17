@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import { Link } from 'react-router-dom';
 
 function StandingsPage() {
   const [standings, setStandings] = useState([]);
@@ -7,7 +8,7 @@ function StandingsPage() {
   useEffect(() => {
     const fetchStandings = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/partidos/standings');
+        const response = await api.get('/partidos/standings');
         setStandings(response.data);
       } catch (error) {
         console.error("Error al obtener la tabla de posiciones", error);
@@ -35,7 +36,7 @@ function StandingsPage() {
         <tbody>
           {standings.map((team, index) => (
             <tr key={index}>
-              <td>{team.nombre}</td>
+              <td><Link to={`/equipos/${team._id}`}>{team.nombre}</Link></td>
               <td>{team.PJ}</td>
               <td>{team.PG}</td>
               <td>{team.PE}</td>

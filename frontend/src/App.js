@@ -41,7 +41,7 @@ function App() {
       <div className="main-content">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/partidos" element={<MatchesPage />} />
+          <Route path="/partidos"element={<ProtectedRoute><MatchesPage /></ProtectedRoute>}/>
           <Route path="/tabla" element={<StandingsPage />} />
           <Route path="/login" element={<LoginPage onLoginSuccess={handleLogin} />} />
           
