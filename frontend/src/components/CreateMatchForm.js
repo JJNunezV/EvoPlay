@@ -15,7 +15,7 @@ function CreateMatchForm({ onMatchCreated }) {
   useEffect(() => {
     const fetchTeams = async () => {
       try {
-        // 👇 AQUÍ FALTABA EL CAMBIO: Agregamos '/api'
+        // 👇 AQUÍ ESTABA EL CULPABLE. AHORA SÍ TIENE /api
         const response = await api.get('/api/equipos');
         setTeams(response.data);
       } catch (error) {
@@ -32,7 +32,7 @@ function CreateMatchForm({ onMatchCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 👇 Aseguramos que este también tenga '/api'
+      // 👇 Este también debe tener /api
       await api.post('/api/partidos', formData);
       
       alert('¡Partido registrado exitosamente!');
