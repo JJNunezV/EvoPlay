@@ -11,8 +11,8 @@ function HomePage() {
     const loadDashboardData = async () => {
       try {
         const [matchesRes, scorersRes] = await Promise.all([
-          api.get('/partidos/proximos'),
-          api.get('/equipos/stats/goleadores')
+          api.get('/api/partidos/proximos'),
+          api.get('/api/equipos/stats/goleadores')
         ]);
         setUpcomingMatches(matchesRes.data);
         setTopScorers(scorersRes.data);

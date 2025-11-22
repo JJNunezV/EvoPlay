@@ -8,7 +8,7 @@ function MatchesPage() {
   const fetchMatches = async () => {
     try {
       // 👇 CAMBIO CLAVE: Usamos api.get y la ruta relativa
-      const response = await api.get('/partidos');
+      const response = await api.get('/api/partidos');
       setMatches(response.data);
     } catch (error) {
       console.error("Error al obtener los partidos", error);
