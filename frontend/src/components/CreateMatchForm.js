@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api'; // Importamos api
+import api from '../api';
 
 function CreateMatchForm({ onMatchCreated }) {
   const [formData, setFormData] = useState({
@@ -15,7 +15,8 @@ function CreateMatchForm({ onMatchCreated }) {
   useEffect(() => {
     const fetchTeams = async () => {
       try {
-        const response = await api.get('/equipos');
+        // 👇 AQUÍ FALTABA EL CAMBIO: Agregamos '/api'
+        const response = await api.get('/api/equipos');
         setTeams(response.data);
       } catch (error) {
         console.error("No se pudieron cargar los equipos", error);
@@ -31,9 +32,8 @@ function CreateMatchForm({ onMatchCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 👇 AQUÍ ESTABA EL ERROR CORREGIDO 👇
-      // Usamos 'api.post' y solo la ruta '/partidos'
-      await api.post('/partidos', formData);
+      // 👇 Aseguramos que este también tenga '/api'
+      await api.post('/api/partidos', formData);
       
       alert('¡Partido registrado exitosamente!');
       onMatchCreated();
