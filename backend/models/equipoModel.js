@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// 1. Creamos un "molde" o esquema solo para los jugadores
 const jugadorSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
   posicion: { type: String, default: 'N/A' },
@@ -8,7 +7,6 @@ const jugadorSchema = new mongoose.Schema({
   asistencias: { type: Number, default: 0 }
 });
 
-// 2. Modificamos el esquema del equipo
 const equipoSchema = new mongoose.Schema({
   nombre: {
     type: String,
@@ -19,7 +17,13 @@ const equipoSchema = new mongoose.Schema({
     type: String,
     required: false
   },
-  // Ahora, "jugadores" es una lista de objetos que siguen el molde de jugadorSchema
+  // 👇 NUEVO CAMPO
+  categoria: {
+    type: String,
+    required: true,
+    enum: ['Fútbol 7', 'Fútbol 11', 'Fútbol Rápido', 'Pádel', 'Voleibol'], // Puedes agregar más aquí
+    default: 'Fútbol 7'
+  },
   jugadores: [jugadorSchema]
 }, { timestamps: true });
 
