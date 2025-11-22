@@ -49,7 +49,7 @@ router.get('/recientes', async (req, res) => {
 router.get('/standings', async (req, res) => {
   try {
     const teams = await Equipo.find();
-    const matches = await Partido.find({ finalizado: true }); // <-- OJO AQUÍ
+    const proximos = await Partido.find({ finalizado: false }).sort({ fecha: 1 }).limit(5)
     const stats = {};
     teams.forEach(team => {
       stats[team._id] = { _id: team._id, nombre: team.nombre, logoUrl: team.logoUrl, PJ: 0, PG: 0, PE: 0, PP: 0, GF: 0, GC: 0, DG: 0, PTS: 0 };
