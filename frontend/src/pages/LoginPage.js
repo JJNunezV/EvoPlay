@@ -11,7 +11,7 @@ function LoginPage({ onLoginSuccess }) {
     e.preventDefault();
     try {
       // 👇 AQUÍ ESTÁ EL CAMBIO: Usamos api.post y la ruta corta
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       
       localStorage.setItem('token', response.data.token);
       onLoginSuccess();
