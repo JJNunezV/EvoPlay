@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api from '../api'; // Usamos nuestro api.js centralizado
 import { Link } from 'react-router-dom';
 
 function StandingsPage() {
@@ -8,6 +8,7 @@ function StandingsPage() {
   useEffect(() => {
     const fetchStandings = async () => {
       try {
+        // 👇 CAMBIO CLAVE AQUÍ: Usamos 'api' en lugar de 'axios'
         const response = await api.get('/partidos/standings');
         setStandings(response.data);
       } catch (error) {
@@ -35,7 +36,7 @@ function StandingsPage() {
         </thead>
         <tbody>
           {standings.map((team, index) => (
-            <tr key={index}>
+            <tr key={team._id}> {/* Usar team._id es más seguro que el index */}
               <td><Link to={`/equipos/${team._id}`}>{team.nombre}</Link></td>
               <td>{team.PJ}</td>
               <td>{team.PG}</td>

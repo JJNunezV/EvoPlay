@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import TeamList from '../components/TeamList';
 import CreateTeamForm from '../components/CreateTeamForm';
-import EditTeamForm from '../components/EditTeamForm'; // Asegúrate de que este archivo exista
+import EditTeamForm from '../components/EditTeamForm'; 
 
 function TeamsPage() {
   const [teams, setTeams] = useState([]);

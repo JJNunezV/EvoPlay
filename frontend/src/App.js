@@ -7,6 +7,7 @@ import MatchesPage from './pages/MatchesPage';
 import StandingsPage from './pages/StandingsPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import TeamDetailPage from './pages/TeamDetailPage';
 
 function App() {
   // Aquí usamos React.useState para crear el estado correctamente
@@ -44,7 +45,8 @@ function App() {
           <Route path="/partidos"element={<ProtectedRoute><MatchesPage /></ProtectedRoute>}/>
           <Route path="/tabla" element={<StandingsPage />} />
           <Route path="/login" element={<LoginPage onLoginSuccess={handleLogin} />} />
-          
+          <Route path="/equipos/:id" element={<TeamDetailPage />} />
+
           {/* Ruta Protegida */}
           <Route
             path="/equipos"
