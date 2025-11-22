@@ -23,7 +23,7 @@ function CreateTeamForm({ onTeamCreated }) { // Se recibe la función aquí
     };
 
     try {
-      const response = await api.post('/equipos', equipoParaEnviar);
+      const response = await api.post('/api/equipos', equipoParaEnviar);
       alert(`¡Equipo "${response.data.nombre}" creado exitosamente!`);
       setFormData({ nombre: '', logoUrl: '', jugadores: '' });
       

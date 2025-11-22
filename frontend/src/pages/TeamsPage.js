@@ -12,7 +12,7 @@ function TeamsPage() {
   const fetchTeams = async () => {
     try {
       // Usamos 'api.get', que ya incluye el token de sesión
-      const response = await api.get('/equipos');
+      const response = await api.get('/api/equipos');
       setTeams(response.data);
     } catch (err) {
       console.error("ERROR en TeamsPage al obtener equipos:", err);

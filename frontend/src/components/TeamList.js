@@ -7,7 +7,7 @@ function TeamList({ teams, onTeamDeleted, onEditClick }) {
     if (window.confirm('¿Estás seguro de que quieres borrar este equipo?')) {
       try {
         // Usamos 'api.delete', que ya incluye el token de sesión
-        await api.delete(`/equipos/${teamId}`);
+       await api.delete(`/api/equipos/${teamId}`);
         alert('Equipo borrado');
         onTeamDeleted();
       } catch (error) {
