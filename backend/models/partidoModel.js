@@ -7,15 +7,16 @@ const partidoSchema = new Schema({
   golesLocal: { type: Number, default: 0 },
   golesVisitante: { type: Number, default: 0 },
   fecha: { type: Date, required: true },
-  // Detalle de cada evento de gol
+  // 👇 NUEVO CAMPO: Indica si el partido ya se jugó
+  finalizado: { type: Boolean, default: true }, 
   detallesGoles: [{
     jugadorId: String,
     nombreJugador: String,
-    asistenciaId: String,      // <-- NUEVO: ID del que dio el pase
-    nombreAsistente: String,   // <-- NUEVO: Nombre del que dio el pase
+    asistenciaId: String,
+    nombreAsistente: String,
     minuto: Number,
-    equipo: String,            // 'local' o 'visitante' (el equipo del jugador)
-    esAutogol: { type: Boolean, default: false } // <-- NUEVO: Check de autogol
+    equipo: String,
+    esAutogol: { type: Boolean, default: false }
   }]
 }, { timestamps: true });
 

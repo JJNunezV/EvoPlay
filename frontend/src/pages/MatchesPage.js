@@ -4,74 +4,85 @@ import CreateMatchForm from '../components/CreateMatchForm';
 
 function MatchesPage() {
   const [matches, setMatches] = useState([]);
-  // 👇 TRUCO: Verificamos si hay un token guardado para saber si es admin
+  const [matchToPlay, setMatchToPlay] = useState(null); // El partido que vamos a jugar
   const isAdmin = !!localStorage.getItem('token');
 
   const fetchMatches = async () => {
     try {
       const response = await api.get('/api/partidos');
-      // Ordenamos: primero los más recientes
-      const partidosOrdenados = response.data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-      setMatches(partidosOrdenados);
-    } catch (error) {
-      console.error("Error al obtener los partidos", error);
-    }
+      // Ordenamos: los más nuevos primero
+      const ordenados = response.data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      setMatches(ordenados);
+    } catch (error) { console.error("Error", error); }
   };
 
-  useEffect(() => {
-    fetchMatches();
-  }, []);
+  useEffect(() => { fetchMatches(); }, []);
 
-  // Función para formatear la fecha bonita
-  const formatearFecha = (fechaString) => {
-    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(fechaString).toLocaleDateString('es-ES', opciones);
-  };
+  // Filtramos las listas
+  const programados = matches.filter(m => !m.finalizado);
+  const finalizados = matches.filter(m => m.finalizado);
+
+  const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
 
   return (
-    <div>
-      <h1>Resultados y Calendario</h1>
+    <div style={{display: 'flex', gap: '20px', flexDirection: 'column'}}>
+      <h1>⚽ Centro de Partidos</h1>
 
-      {/* 👇 CONDICIONAL: Solo mostramos el formulario si es Admin */}
+      {/* PANEL DE ADMIN: Crear o Jugar */}
       {isAdmin && (
-        <div style={{marginBottom: '40px', border: '2px dashed #007bff', padding: '20px', borderRadius: '10px'}}>
-          <h3 style={{marginTop: 0, color: '#007bff'}}>Panel de Administrador</h3>
-          <CreateMatchForm onMatchCreated={fetchMatches} />
+        <div style={{marginBottom: '20px'}}>
+          <CreateMatchForm 
+            onMatchCreated={() => { fetchMatches(); setMatchToPlay(null); }} 
+            matchToPlay={matchToPlay}
+            onCancel={() => setMatchToPlay(null)}
+          />
         </div>
       )}
 
-      <div style={{ marginTop: '20px' }}>
-        {matches.length > 0 ? (
-          matches.map(match => (
-            <div key={match._id} className="match-card" style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '15px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '10px',
-              backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-            }}>
-              {/* Equipo Local */}
-              <div style={{flex: 1, textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem'}}>
-                {match.equipoLocal.nombre}
-                {match.equipoLocal.logoUrl && <img src={match.equipoLocal.logoUrl} alt="logo" width="30" style={{marginLeft: '10px', verticalAlign: 'middle'}}/>}
+      <div style={{display: 'flex', gap: '40px', flexWrap: 'wrap'}}>
+        
+        {/* COLUMNA IZQUIERDA: PROGRAMADOS */}
+        <div style={{flex: 1, minWidth: '300px'}}>
+          <h2 style={{borderBottom: '3px solid #ffc107', display:'inline-block'}}>📅 Próximos Encuentros</h2>
+          {programados.length === 0 && <p>No hay partidos programados.</p>}
+          {programados.map(m => (
+            <div key={m._id} style={{background: '#fff3cd', padding: '15px', borderRadius: '8px', marginBottom: '10px', border:'1px solid #ffeeba'}}>
+              <div style={{fontWeight: 'bold', marginBottom: '5px'}}>{formatearFecha(m.fecha)}</div>
+              <div style={{fontSize: '1.2rem', display:'flex', justifyContent:'space-between'}}>
+                <span>{m.equipoLocal.nombre}</span>
+                <span style={{color:'#888'}}>vs</span>
+                <span>{m.equipoVisitante.nombre}</span>
               </div>
+              {isAdmin && (
+                <button 
+                  onClick={() => { setMatchToPlay(m); window.scrollTo({top:0, behavior:'smooth'}); }}
+                  style={{marginTop: '10px', width: '100%', padding: '8px', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'}}
+                >
+                  ▶️ Jugar Ahora
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
 
-              {/* Marcador Central */}
-              <div style={{margin: '0 20px', textAlign: 'center'}}>
-                <div style={{fontSize: '1.5rem', fontWeight: 'bold', backgroundColor: '#333', color: '#fff', padding: '5px 15px', borderRadius: '8px'}}>
-                  {match.golesLocal} - {match.golesVisitante}
-                </div>
-                <small style={{color: '#777'}}>{formatearFecha(match.fecha)}</small>
-              </div>
-
-              {/* Equipo Visitante */}
-              <div style={{flex: 1, textAlign: 'left', fontWeight: 'bold', fontSize: '1.1rem'}}>
-                {match.equipoVisitante.logoUrl && <img src={match.equipoVisitante.logoUrl} alt="logo" width="30" style={{marginRight: '10px', verticalAlign: 'middle'}}/>}
-                {match.equipoVisitante.nombre}
+        {/* COLUMNA DERECHA: RESULTADOS */}
+        <div style={{flex: 1, minWidth: '300px'}}>
+          <h2 style={{borderBottom: '3px solid #28a745', display:'inline-block'}}>✅ Resultados Finales</h2>
+          {finalizados.length === 0 && <p>Aún no hay resultados.</p>}
+          {finalizados.map(m => (
+            <div key={m._id} style={{background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '10px', border:'1px solid #ddd', boxShadow:'0 2px 5px rgba(0,0,0,0.05)'}}>
+              <div style={{color:'#777', fontSize:'0.8rem'}}>{formatearFecha(m.fecha)}</div>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize:'1.2rem', fontWeight:'bold'}}>
+                <span style={{flex:1, textAlign:'right'}}>{m.equipoLocal.nombre}</span>
+                <span style={{background:'#333', color:'#fff', padding:'5px 15px', borderRadius:'10px', margin:'0 10px'}}>
+                  {m.golesLocal} - {m.golesVisitante}
+                </span>
+                <span style={{flex:1, textAlign:'left'}}>{m.equipoVisitante.nombre}</span>
               </div>
             </div>
-          ))
-        ) : (
-          <p style={{textAlign: 'center', color: '#777'}}>No hay partidos registrados aún.</p>
-        )}
+          ))}
+        </div>
+
       </div>
     </div>
   );
