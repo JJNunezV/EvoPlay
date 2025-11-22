@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
-import CreateMatchForm from '../components/CreateMatchForm'; // <-- Importado
+import api from '../api'; // Usamos nuestra api configurada
+import CreateMatchForm from '../components/CreateMatchForm';
 
 function MatchesPage() {
   const [matches, setMatches] = useState([]);
 
-  const fetchMatches = async () => { // <-- Función para refrescar
+  const fetchMatches = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/partidos');
+      // 👇 CAMBIO CLAVE: Usamos api.get y la ruta relativa
+      const response = await api.get('/partidos');
       setMatches(response.data);
     } catch (error) {
       console.error("Error al obtener los partidos", error);
@@ -21,8 +22,8 @@ function MatchesPage() {
   return (
     <div>
       <h1>Resultados de Partidos</h1>
-      <CreateMatchForm onMatchCreated={fetchMatches} /> {/* <-- Formulario añadido */}
-      <div style={{ marginTop: '20px' }}> {/* Añadido para dar espacio */}
+      <CreateMatchForm onMatchCreated={fetchMatches} />
+      <div style={{ marginTop: '20px' }}>
         {matches.length > 0 ? (
           matches.map(match => (
             <div key={match._id} className="match-card">

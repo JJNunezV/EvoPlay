@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api from '../api'; // Usamos nuestra api configurada
 
 function EditTeamForm({ team, onUpdateComplete }) {
   const [formData, setFormData] = useState({ nombre: '', logoUrl: '', jugadores: '' });
 
-  // Este useEffect actualiza el formulario si el equipo a editar cambia.
   useEffect(() => {
     if (team) {
+      // Intentamos manejar si los jugadores vienen como objetos o strings
+      let jugadoresString = '';
+      if (Array.isArray(team.jugadores)) {
+        jugadoresString = team.jugadores
+          .map(j => (typeof j === 'object' ? j.nombre : j))
+          .join(', ');
+      }
+
       setFormData({
         nombre: team.nombre,
         logoUrl: team.logoUrl || '',
-        jugadores: team.jugadores.join(', ') // Convertimos el array a string
+        jugadores: jugadoresString
       });
     }
   }, [team]);
@@ -21,20 +28,27 @@ function EditTeamForm({ team, onUpdateComplete }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const jugadoresArray = formData.jugadores.split(',').map(j => j.trim());
-    const updatedTeam = { ...formData, jugadores: jugadoresArray };
+    // Convertimos el string de nombres a un arreglo de objetos para la BD
+    const jugadoresArray = formData.jugadores.split(',').map(j => ({ nombre: j.trim() }));
+    
+    const updatedTeam = { 
+      ...formData, 
+      jugadores: jugadoresArray 
+    };
 
     try {
-      await axios.put(`http://localhost:5000/api/equipos/${team._id}`, updatedTeam);
+      // 👇 CAMBIO CLAVE: Usamos api.put y la ruta relativa
+      await api.put(`/equipos/${team._id}`, updatedTeam);
+      
       alert('Equipo actualizado!');
-      onUpdateComplete(); // Avisa a App.js que terminamos para que refresque la lista.
+      onUpdateComplete();
     } catch (error) {
       console.error('Error al actualizar', error);
       alert('No se pudo actualizar el equipo');
     }
   };
 
-  if (!team) return null; // Si no hay equipo para editar, no muestra nada.
+  if (!team) return null;
 
   return (
     <form onSubmit={handleSubmit}>
