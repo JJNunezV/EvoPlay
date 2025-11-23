@@ -1,177 +1,212 @@
+/* IMPORTAR FUENTES DE LUJO */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap');
+
+:root {
+  --bg-color: #0a0a0a;       /* Negro profundo */
+  --card-bg: #121212;        /* Gris muy oscuro */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --gold: #d4af37;           /* Dorado Premium */
+  --gold-hover: #b5952f;
+  --danger: #ff4d4d;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
 body {
-  font-family: sans-serif;
-  background-color: #f4f4f4;
-  color: #333;
-  padding: 20px;
-}
-
-.App {
-  max-width: 800px;
-  margin: 0 auto;
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-ul {
-  list-style-type: none;
+  margin: 0;
   padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
 }
 
-li {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-}
-form {
-  margin-top: 30px;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+/* --- ESTILOS GENERALES --- */
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif; /* Fuente elegante para títulos */
+  color: var(--gold);
+  letter-spacing: 1px;
 }
 
-form div {
-  margin-bottom: 15px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-input[type="text"] {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-button {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-.delete-btn {
-  background-color: #dc3545; /* A common red for delete actions */
-  margin-left: 10px; /* Space between the name and the button */
-}
-
-.delete-btn:hover {
-  background-color: #c82333;
-}
-
-li {
-  /* ... other styles ... */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-nav {
-  background-color: #333;
-  padding: 1rem;
-  display: flex;
-  gap: 1rem;
-}
-
-nav a {
-  color: white;
+a {
   text-decoration: none;
-  font-size: 1.2rem;
+  color: var(--text-primary);
+  transition: 0.3s;
 }
 
-nav a:hover {
-  text-decoration: underline;
-}
-
-.main-content {
-  padding: 20px;
-}
-.match-card {
+/* --- HEADER PREMIUM (NAVBAR) --- */
+nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  padding: 20px 5%;
+  background: rgba(10, 10, 10, 0.8); /* Transparente */
+  backdrop-filter: blur(15px);       /* Efecto vidrio */
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
+
+.nav-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+}
+
+.nav-item {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-item:hover, .active-link {
+  color: var(--gold);
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 8px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.logout-btn:hover {
+  background: var(--gold);
+  color: var(--bg-color);
+}
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.main-content {
+  min-height: 80vh;
+  padding: 40px 5%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --- TARJETAS DE LUJO (Cards) --- */
+.premium-card, .match-card, .widget {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.3s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--gold);
+}
+
+/* --- TABLAS ELEGANTES --- */
 .standings-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-}
-
-.standings-table th, .standings-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
+  font-size: 0.9rem;
 }
 
 .standings-table th {
-  background-color: #f2f2f2;
-}
-
-.standings-table td:first-child {
   text-align: left;
-}
-.logout-btn {
-  background: none;
-  border: none;
-  color: white;
-  text-decoration: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.logout-btn:hover {
-  text-decoration: underline;
-}
-
-.team-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 2rem;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 2rem;
-}
-
-.widget {
-  background-color: #f9f9f9;
   padding: 15px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--glass-border);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.standings-table td {
+  padding: 15px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.standings-table tr:hover {
+  background: var(--glass);
+}
+
+/* --- INPUTS Y BOTONES --- */
+input, select {
+  background: var(--bg-color);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 12px;
   border-radius: 8px;
-  border: 1px solid #eee;
+  outline: none;
+  transition: 0.3s;
 }
 
-.widget-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+input:focus, select:focus {
+  border-color: var(--gold);
 }
 
-.scorer-item {
-    justify-content: flex-start;
-    gap: 10px;
+button[type="submit"], .create-btn {
+  background: linear-gradient(45deg, var(--gold), #f1c40f);
+  color: black;
+  font-weight: bold;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+  transition: 0.3s;
 }
 
-.scorer-item strong {
-    margin-left: auto;
+button[type="submit"]:hover {
+  box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+  transform: scale(1.02);
+}
+
+/* --- FOOTER DE LUJO --- */
+.luxury-footer {
+  background: var(--card-bg);
+  border-top: 1px solid var(--glass-border);
+  padding: 60px 5% 20px;
+  margin-top: 50px;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-section h4 {
+  color: white;
+  margin-bottom: 20px;
+}
+
+.footer-section p, .footer-section a {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.footer-section a:hover {
+  color: var(--gold);
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--glass-border);
+  padding-top: 20px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #555;
 }
