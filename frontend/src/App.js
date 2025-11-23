@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion'; // <-- Importamos animaciones
+import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 
-// Páginas
 import HomePage from './pages/HomePage';
 import TeamsPage from './pages/TeamsPage';
 import MatchesPage from './pages/MatchesPage';
 import StandingsPage from './pages/StandingsPage';
 import LoginPage from './pages/LoginPage';
 import TeamDetailPage from './pages/TeamDetailPage';
-import Footer from './components/Footer'; // <-- Importamos Footer
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Configuración de la animación de página
+// Configuración de la animación
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
   in: { opacity: 1, y: 0 },
@@ -26,7 +25,7 @@ const pageTransition = {
   duration: 0.5
 };
 
-// Componente para envolver cada página con animación
+// Componente para animar las páginas
 const AnimatedPage = ({ children }) => {
   return (
     <motion.div
@@ -44,7 +43,7 @@ const AnimatedPage = ({ children }) => {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const navigate = useNavigate();
-  const location = useLocation(); // Necesario para que Framer Motion sepa cuándo cambia la ruta
+  const location = useLocation();
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -58,14 +57,14 @@ function App() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
-      {/* --- HEADER DE LUJO --- */}
+      {/* --- HEADER PREMIUM --- */}
       <nav>
-        <div className="nav-logo">EVOPLAY <span style={{color:'white', fontSize:'0.5em'}}>GOLD EDITION</span></div>
+        <div className="nav-logo">EVOPLAY <span style={{color:'#fff', fontSize:'0.5em'}}>LEAGUE</span></div>
         <div className="nav-links">
           <Link to="/" className="nav-item">Inicio</Link>
           <Link to="/partidos" className="nav-item">Partidos</Link>
           <Link to="/tabla" className="nav-item">Tabla</Link>
-          {isAuthenticated && <Link to="/equipos" className="nav-item" style={{color:'#d4af37'}}>Gestión</Link>}
+          {isAuthenticated && <Link to="/equipos" className="nav-item" style={{color:'#c5a059'}}>Gestión</Link>}
         </div>
         <div>
           {isAuthenticated ? (
@@ -75,11 +74,11 @@ function App() {
           )}
         </div>
       </nav>
-        {/* AnimatePresence permite animar cuando un componente se va */}
+      
+      {/* --- CONTENIDO PRINCIPAL --- */}
+      <div style={{flex: 1}}>
         <AnimatePresence mode='wait'>
           <Routes location={location} key={location.pathname}>
-            
-            {/* Envolvemos cada ruta en AnimatedPage */}
             <Route path="/" element={<AnimatedPage><HomePage /></AnimatedPage>} />
             <Route path="/login" element={<AnimatedPage><LoginPage onLoginSuccess={handleLogin} /></AnimatedPage>} />
             <Route path="/partidos" element={<AnimatedPage><MatchesPage /></AnimatedPage>} />
@@ -98,7 +97,7 @@ function App() {
         </AnimatePresence>
       </div>
 
-      {/* --- FOOTER DE LUJO --- */}
+      {/* --- FOOTER --- */}
       <Footer />
     </div>
   );
