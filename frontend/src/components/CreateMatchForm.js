@@ -1,26 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-// Recibimos 'matchToPlay' (si vamos a jugar uno agendado) y 'onCancel'
 function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
   const [teams, setTeams] = useState([]);
   
-  // Datos del partido
+  // Datos generales
   const [localId, setLocalId] = useState('');
   const [visitanteId, setVisitanteId] = useState('');
   const [fecha, setFecha] = useState('');
-  
-  // Modo: ¿Es solo para programar o ya se jugó?
-  const [esProgramado, setEsProgramado] = useState(true); // Por defecto programar
+  const [esProgramado, setEsProgramado] = useState(true);
 
-  // Marcadores y eventos
+  // Marcador y Eventos
   const [scoreLocal, setScoreLocal] = useState(0);
   const [scoreVisitante, setScoreVisitante] = useState(0);
   const [eventosGol, setEventosGol] = useState([]);
-  const [golTemp, setGolTemp] = useState({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
+
+  // Estado temporal para el gol que se está escribiendo
+  const [golTemp, setGolTemp] = useState({ 
+    jugadorId: '', 
+    asistenciaId: '', 
+    minuto: '', 
+    esAutogol: false 
+  });
 
   useEffect(() => {
-    // 1. Cargar equipos
     const fetchTeams = async () => {
       try {
         const response = await api.get('/api/equipos');
@@ -29,47 +32,78 @@ function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
     };
     fetchTeams();
 
-    // 2. Si nos mandaron un partido para JUGAR, llenamos los datos
     if (matchToPlay) {
       setLocalId(matchToPlay.equipoLocal._id || matchToPlay.equipoLocal);
       setVisitanteId(matchToPlay.equipoVisitante._id || matchToPlay.equipoVisitante);
-      // Formatear fecha para el input (YYYY-MM-DD)
       const fechaObj = new Date(matchToPlay.fecha);
       setFecha(fechaObj.toISOString().split('T')[0]);
-      
-      setEsProgramado(false); // Cambiamos a modo "Jugar" automáticamente
+      setEsProgramado(false); 
     }
   }, [matchToPlay]);
 
   const teamLocalObj = teams.find(t => t._id === localId);
   const teamVisitanteObj = teams.find(t => t._id === visitanteId);
 
-  // Agregar Gol (Igual que antes)
-  const agregarEvento = (esLocal) => {
-    if (!golTemp.jugadorId || !golTemp.minuto) return alert("Datos incompletos");
-    const equipo = esLocal ? teamLocalObj : teamVisitanteObj;
-    const jugador = equipo.jugadores.find(j => j._id === golTemp.jugadorId);
-    const asistente = golTemp.asistenciaId ? equipo.jugadores.find(j => j._id === golTemp.asistenciaId) : null;
+  // --- LÓGICA PARA AGREGAR UN GOL A LA LISTA ---
+  const agregarEvento = (esEquipoLocal) => {
+    if (!golTemp.jugadorId || !golTemp.minuto) return alert("Debes seleccionar jugador y minuto");
 
-    if (esLocal) { if (golTemp.esAutogol) setScoreVisitante(s => s+1); else setScoreLocal(s => s+1); }
-    else { if (golTemp.esAutogol) setScoreLocal(s => s+1); else setScoreVisitante(s => s+1); }
+    const equipoActual = esEquipoLocal ? teamLocalObj : teamVisitanteObj;
+    const jugador = equipoActual.jugadores.find(j => j._id === golTemp.jugadorId);
+    const asistente = golTemp.asistenciaId ? equipoActual.jugadores.find(j => j._id === golTemp.asistenciaId) : null;
 
-    setEventosGol([...eventosGol, {
-      jugadorId: golTemp.jugadorId, nombreJugador: jugador.nombre,
-      asistenciaId: golTemp.asistenciaId, nombreAsistente: asistente?.nombre,
-      minuto: golTemp.minuto, equipo: esLocal ? 'local' : 'visitante', esAutogol: golTemp.esAutogol
-    }]);
+    // Lógica del Marcador:
+    // Si es Local y NO es autogol -> Gol para Local
+    // Si es Local y SI es autogol -> Gol para Visitante
+    if (esEquipoLocal) {
+      if (golTemp.esAutogol) setScoreVisitante(s => s + 1);
+      else setScoreLocal(s => s + 1);
+    } else {
+      // Viceversa para visitante
+      if (golTemp.esAutogol) setScoreLocal(s => s + 1);
+      else setScoreVisitante(s => s + 1);
+    }
+
+    const nuevoEvento = {
+      jugadorId: golTemp.jugadorId,
+      nombreJugador: jugador.nombre,
+      asistenciaId: golTemp.asistenciaId || null,
+      nombreAsistente: asistente ? asistente.nombre : null,
+      minuto: golTemp.minuto,
+      equipo: esEquipoLocal ? 'local' : 'visitante',
+      esAutogol: golTemp.esAutogol
+    };
+
+    setEventosGol([...eventosGol, nuevoEvento]);
+    
+    // Limpiar inputs temporales
     setGolTemp({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
+  };
+
+  // --- ELIMINAR UN GOL DE LA LISTA ---
+  const eliminarEvento = (index) => {
+    const evento = eventosGol[index];
+    const esLocal = evento.equipo === 'local';
+
+    // Restar del marcador
+    if (esLocal) {
+      if (evento.esAutogol) setScoreVisitante(s => s - 1);
+      else setScoreLocal(s => s - 1);
+    } else {
+      if (evento.esAutogol) setScoreLocal(s => s - 1);
+      else setScoreVisitante(s => s - 1);
+    }
+
+    setEventosGol(eventosGol.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     const payload = {
       equipoLocal: localId,
       equipoVisitante: visitanteId,
       fecha: fecha,
-      finalizado: !esProgramado, // Si está programado, finalizado es false
+      finalizado: !esProgramado,
       golesLocal: esProgramado ? 0 : scoreLocal,
       golesVisitante: esProgramado ? 0 : scoreVisitante,
       detallesGoles: esProgramado ? [] : eventosGol
@@ -77,19 +111,16 @@ function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
 
     try {
       if (matchToPlay) {
-        // Si estamos editando/jugando uno existente -> PUT
         await api.put(`/api/partidos/${matchToPlay._id}`, payload);
         alert('¡Partido finalizado y estadísticas guardadas!');
       } else {
-        // Si es nuevo -> POST
         await api.post('/api/partidos', payload);
-        alert(esProgramado ? '¡Partido programado exitosamente!' : '¡Partido registrado!');
+        alert(esProgramado ? '¡Partido programado!' : '¡Resultado registrado!');
       }
       
-      onMatchCreated(); // Refrescar lista padre
-      if (onCancel) onCancel(); // Cerrar modo edición si existe
+      onMatchCreated();
+      if (onCancel) onCancel();
       
-      // Limpiar
       if (!matchToPlay) {
         setLocalId(''); setVisitanteId(''); setFecha('');
         setScoreLocal(0); setScoreVisitante(0); setEventosGol([]);
@@ -99,84 +130,133 @@ function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
     }
   };
 
-  // Renderizado de Inputs de Gol (Oculto si esProgramado)
-  const renderGameControls = () => (
-    <>
-      <div style={{textAlign: 'center', fontSize: '2rem', fontWeight: 'bold', margin: '20px 0'}}>
-        {scoreLocal} - {scoreVisitante}
-      </div>
-      {/* (Aquí iría el mismo código de renderInputZone del paso anterior, simplificado para ahorrar espacio en respuesta) */}
-      <div style={{display:'flex', gap:'10px'}}>
-         {/* Local Gol Input (Simplificado) */}
-         <div style={{flex:1, background:'#e3f2fd', padding:'10px'}}>
-            <h4>{teamLocalObj?.nombre}</h4>
-            <button type="button" onClick={() => setGolTemp({...golTemp, esAutogol: false})} style={{display:'none'}}>Dummy</button>
-            {/* Aquí deberías pegar el renderInputZone(true) completo de la versión anterior si quieres full detalle */}
-            <p style={{fontSize:'0.8rem', color:'gray'}}>Usa el panel completo para agregar goles (Resumido para esta vista)</p>
-            {/* Botón rápido para probar funcionalidad */}
-            <button type="button" onClick={() => { setScoreLocal(s=>s+1); alert("Para goles con nombre, usa el código completo anterior o pídeme integrarlo"); }}>+ Gol Rápido (Test)</button>
-         </div>
-         <div style={{flex:1, background:'#ffebee', padding:'10px'}}>
-            <h4>{teamVisitanteObj?.nombre}</h4>
-            <button type="button" onClick={() => { setScoreVisitante(s=>s+1); }}>+ Gol Rápido (Test)</button>
-         </div>
-      </div>
-    </>
-  );
+  // --- COMPONENTE VISUAL PARA LOS CONTROLES ---
+  const renderInputZone = (esLocal) => {
+    const equipo = esLocal ? teamLocalObj : teamVisitanteObj;
+    if (!equipo) return null;
 
-  // NOTA: Para que funcione el registro de jugadores detallado, 
-  // copia la función renderInputZone del código que te di en la respuesta anterior y úsala aquí.
-  // Por ahora, dejaré el modo "Solo Programar" vs "Jugar" funcional.
+    // Filtramos al jugador seleccionado para que no se pueda asistir a sí mismo
+    const posiblesAsistentes = equipo.jugadores ? equipo.jugadores.filter(j => j._id !== golTemp.jugadorId) : [];
+
+    return (
+      <div style={{marginBottom: '15px', padding: '15px', background: esLocal ? '#e3f2fd' : '#ffebee', borderRadius:'8px', border: '1px solid rgba(0,0,0,0.1)'}}>
+        <h4 style={{margin: '0 0 10px 0', color: '#333'}}>Anotación para {equipo.nombre}</h4>
+        
+        <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+          
+          {/* 1. Quién metió el gol */}
+          <div style={{display:'flex', gap:'5px'}}>
+            <select style={{flex: 2, padding:'5px'}} 
+              value={golTemp.jugadorId} 
+              onChange={e => setGolTemp({...golTemp, jugadorId: e.target.value, asistenciaId: ''})}
+            >
+              <option value="">-- Goleador --</option>
+              {equipo.jugadores && equipo.jugadores.map(j => <option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+
+            <input type="number" placeholder="Min" style={{width: '50px', padding:'5px'}} 
+                   value={golTemp.minuto}
+                   onChange={e => setGolTemp({...golTemp, minuto: e.target.value})} />
+          </div>
+
+          {/* 2. Asistencia y Autogol */}
+          {!golTemp.esAutogol && golTemp.jugadorId && (
+            <select style={{width: '100%', padding:'5px'}}
+              value={golTemp.asistenciaId} 
+              onChange={e => setGolTemp({...golTemp, asistenciaId: e.target.value})}
+            >
+              <option value="">-- Asistencia (Opcional) --</option>
+              {posiblesAsistentes.map(j => <option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+          )}
+
+          <label style={{display: 'flex', alignItems: 'center', cursor:'pointer', fontSize:'0.9rem', color: '#d32f2f'}}>
+            <input type="checkbox" 
+                   checked={golTemp.esAutogol} 
+                   onChange={e => setGolTemp({...golTemp, esAutogol: e.target.checked, asistenciaId: ''})} 
+                   style={{marginRight:'5px'}}/>
+            Es Autogol (Cuenta al rival)
+          </label>
+
+          <button type="button" onClick={() => agregarEvento(esLocal)} 
+            style={{marginTop: '5px', width: '100%', background: '#28a745', color: 'white', border:'none', padding:'8px', borderRadius:'4px', cursor:'pointer', fontWeight:'bold'}}>
+            ⚽ Agregar Gol
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <form onSubmit={handleSubmit} style={{border: '2px solid #007bff', padding: '20px', borderRadius: '8px', background:'#fff'}}>
-      <h2 style={{marginTop:0}}>{matchToPlay ? '⚽ Jugar Partido' : '📅 Registrar / Programar'}</h2>
+    <form onSubmit={handleSubmit} style={{border: '2px solid #007bff', padding: '20px', borderRadius: '8px', background:'#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
+      <h2 style={{marginTop:0, color: '#007bff'}}>{matchToPlay ? '⚽ Jugar Partido' : '📅 Registrar / Programar'}</h2>
 
-      <div style={{marginBottom: '15px', display: 'flex', gap: '20px'}}>
-        <label style={{cursor:'pointer'}}>
+      <div style={{marginBottom: '20px', padding:'10px', background:'#f8f9fa', borderRadius:'5px', display: 'flex', gap: '20px', justifyContent:'center'}}>
+        <label style={{cursor:'pointer', fontWeight: esProgramado ? 'bold' : 'normal'}}>
           <input type="radio" checked={esProgramado} onChange={() => setEsProgramado(true)} disabled={!!matchToPlay} /> 
           Solo Programar
         </label>
-        <label style={{cursor:'pointer'}}>
+        <label style={{cursor:'pointer', fontWeight: !esProgramado ? 'bold' : 'normal'}}>
           <input type="radio" checked={!esProgramado} onChange={() => setEsProgramado(false)} /> 
-          Registrar Resultado (Ya se jugó)
+          Registrar Resultado
         </label>
       </div>
 
       <div style={{display: 'flex', gap: '20px', marginBottom: '20px'}}>
         <div style={{flex: 1}}>
-          <label>Local:</label>
-          <select value={localId} onChange={e => setLocalId(e.target.value)} disabled={!!matchToPlay} style={{width:'100%', padding:'8px'}}>
+          <label style={{fontWeight:'bold'}}>Local:</label>
+          <select value={localId} onChange={e => {setLocalId(e.target.value); setEventosGol([]); setScoreLocal(0); setScoreVisitante(0);}} disabled={!!matchToPlay} style={{width:'100%', padding:'8px'}}>
             <option value="">Selecciona</option>
             {teams.map(t => <option key={t._id} value={t._id}>{t.nombre}</option>)}
           </select>
         </div>
         <div style={{flex: 1}}>
-          <label>Visitante:</label>
-          <select value={visitanteId} onChange={e => setVisitanteId(e.target.value)} disabled={!!matchToPlay} style={{width:'100%', padding:'8px'}}>
+          <label style={{fontWeight:'bold'}}>Visitante:</label>
+          <select value={visitanteId} onChange={e => {setVisitanteId(e.target.value); setEventosGol([]); setScoreLocal(0); setScoreVisitante(0);}} disabled={!!matchToPlay} style={{width:'100%', padding:'8px'}}>
             <option value="">Selecciona</option>
             {teams.map(t => <option key={t._id} value={t._id}>{t.nombre}</option>)}
           </select>
         </div>
       </div>
 
-      <label>Fecha:</label>
-      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required style={{marginBottom:'20px', display:'block'}} />
-
-      {/* Si NO es programado, mostramos el panel de juego */}
-      {!esProgramado && (
+      {/* ZONA DE JUEGO (Solo si no es programado) */}
+      {!esProgramado && localId && visitanteId && (
         <div>
-           <p style={{background:'#fff3cd', padding:'10px'}}>ℹ️ Aquí iría el panel de goles detallado (jugadores/minutos). Usa el código de la respuesta anterior dentro de este bloque para tenerlo completo.</p>
-           <div style={{display:'flex', justifyContent:'center', gap:'20px', fontSize:'2rem', fontWeight:'bold', margin:'20px'}}>
-              <div>{teamLocalObj?.nombre}: <input type="number" value={scoreLocal} onChange={e=>setScoreLocal(parseInt(e.target.value))} style={{width:'60px', fontSize:'1.5rem'}}/></div>
-              <div>-</div>
-              <div>{teamVisitanteObj?.nombre}: <input type="number" value={scoreVisitante} onChange={e=>setScoreVisitante(parseInt(e.target.value))} style={{width:'60px', fontSize:'1.5rem'}}/></div>
+           <div style={{textAlign: 'center', fontSize: '3rem', fontWeight: 'bold', margin: '10px 0', color:'#333'}}>
+              {scoreLocal} <span style={{color:'#ccc'}}>-</span> {scoreVisitante}
            </div>
+
+           <div style={{display:'flex', gap:'20px', flexWrap:'wrap'}}>
+              <div style={{flex:1, minWidth:'250px'}}>{renderInputZone(true)}</div>
+              <div style={{flex:1, minWidth:'250px'}}>{renderInputZone(false)}</div>
+           </div>
+
+           {/* LISTA DE EVENTOS REGISTRADOS */}
+           {eventosGol.length > 0 && (
+             <div style={{marginTop:'20px', borderTop:'1px dashed #ccc', paddingTop:'10px'}}>
+               <h4>📝 Resumen del Partido:</h4>
+               <ul style={{listStyle: 'none', padding: 0}}>
+                 {eventosGol.map((ev, i) => (
+                   <li key={i} style={{display:'flex', justifyContent:'space-between', padding:'8px', background:'#f9f9f9', marginBottom:'5px', borderRadius:'4px', borderLeft: ev.equipo === 'local' ? '4px solid #2196f3' : '4px solid #f44336'}}>
+                     <span>
+                       <strong>{ev.minuto}'</strong> {ev.nombreJugador}
+                       {ev.esAutogol && <span style={{color: 'red', fontWeight:'bold', marginLeft:'5px'}}>(AUTOGOL)</span>}
+                       {ev.nombreAsistente && <span style={{color: 'gray', fontSize:'0.9rem', marginLeft:'5px'}}>👟 {ev.nombreAsistente}</span>}
+                     </span>
+                     <button type="button" onClick={() => eliminarEvento(i)} style={{color:'red', border:'none', background:'none', cursor:'pointer', fontWeight:'bold'}}>X</button>
+                   </li>
+                 ))}
+               </ul>
+             </div>
+           )}
         </div>
       )}
 
+      <label style={{marginTop:'10px', display:'block', fontWeight:'bold'}}>Fecha del Partido:</label>
+      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required style={{marginBottom:'20px', display:'block', padding:'8px'}} />
+      
       <div style={{display:'flex', gap:'10px'}}>
-        <button type="submit" style={{flex:1, padding: '12px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer'}}>
+        <button type="submit" style={{flex:1, padding: '12px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1.1rem', cursor: 'pointer'}}>
           {matchToPlay ? 'Finalizar Partido' : (esProgramado ? 'Guardar en Calendario' : 'Guardar Resultado')}
         </button>
         {matchToPlay && (
