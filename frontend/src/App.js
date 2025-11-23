@@ -75,8 +75,6 @@ function App() {
           )}
         </div>
       </nav>
-      
-      <div className="main-content" style={{flex: 1}}>
         {/* AnimatePresence permite animar cuando un componente se va */}
         <AnimatePresence mode='wait'>
           <Routes location={location} key={location.pathname}>
