@@ -2,220 +2,96 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Oswald:wght@400;600;700&display=swap');
 
 :root {
-  --bg-dark: #0e0e0e;        /* Fondo principal (Casi negro) */
-  --card-dark: #1e1e1e;      /* Fondo de tarjetas (Gris oscuro) */
-  --input-bg: #2d2d2d;       /* Fondo de inputs */
-  --gold: #c5a059;           /* Dorado elegante */
-  --gold-hover: #e6c88b;
-  --text-white: #ffffff;     /* Texto principal */
-  --text-gray: #cccccc;      /* Texto secundario (más claro para que se lea) */
+  --bg-dark: #0e0e0e;
+  --card-dark: #1e1e1e;
+  --input-bg: #2d2d2d;
+  --gold: #c5a059;
+  --text-white: #ffffff;
   --border-color: #333333;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   font-family: 'Montserrat', sans-serif;
   background-color: var(--bg-dark);
-  color: var(--text-white);
-  line-height: 1.6;
+  color: var(--text-white); /* Texto blanco por defecto */
 }
 
-/* --- TIPOGRAFÍA DE ALTO CONTRASTE --- */
-h1, h2, h3, .nav-logo {
-  font-family: 'Oswald', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-white); /* Aseguramos blanco */
+/* --- TIPOGRAFÍA --- */
+h1, h2, h3, h4, h5, h6, p, span, div, label, strong {
+  color: var(--text-white) !important; /* FORZAR BLANCO SIEMPRE */
 }
 
 h1 { 
-  font-size: 3rem; 
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.8); /* Sombra para leerse sobre cualquier fondo */
+  font-family: 'Oswald', sans-serif; font-size: 3rem; 
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8); 
 }
-
 h2 { 
-  color: var(--gold); 
-  border-left: 4px solid var(--gold); 
-  padding-left: 15px; 
-}
-
-p, span, div {
-  color: var(--text-white);
-}
-
-small {
-  color: var(--text-gray);
-}
-
-a {
-  text-decoration: none;
-  color: var(--text-white);
-  transition: 0.3s;
-}
-
-a:hover {
-  color: var(--gold);
-}
-
-/* --- NAVBAR --- */
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 5%;
-  background: rgba(14, 14, 14, 0.95);
-  border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  font-family: 'Oswald', sans-serif; color: var(--gold) !important; /* Excepción dorada */
 }
 
 .nav-logo {
-  font-size: 1.8rem;
-  color: var(--gold);
-  font-weight: 700;
+  font-family: 'Oswald', sans-serif; font-size: 1.8rem; color: var(--gold) !important;
 }
 
+a { text-decoration: none; color: var(--text-white); transition: 0.3s; }
+a:hover { color: var(--gold) !important; }
+
+/* --- NAVBAR --- */
+nav {
+  display: flex; justify-content: space-between; align-items: center; padding: 15px 5%;
+  background: rgba(14, 14, 14, 0.95); border-bottom: 1px solid var(--border-color);
+  position: sticky; top: 0; z-index: 1000;
+}
 .nav-links { display: flex; gap: 25px; }
 
-/* --- HERO SECTION (BANNER) --- */
+/* --- HERO BANNER --- */
 .hero-section {
   height: 60vh;
-  /* Capa oscura encima de la imagen para que las letras resalten */
   background: linear-gradient(to bottom, rgba(0,0,0,0.6), #0e0e0e), 
-              url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831&auto=format&fit=crop');
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 40px;
+              url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831');
+  background-size: cover; background-position: center;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-bottom: 40px;
 }
 
-/* --- FORMULARIOS, INPUTS Y SELECTS (Corrección de Visibilidad) --- */
+/* --- INPUTS BLINDADOS (Aquí estaba el problema) --- */
 input, select, textarea {
-  background-color: var(--input-bg) !important; /* Gris oscuro */
-  color: #ffffff !important; /* Letras blancas */
+  background-color: var(--input-bg) !important; /* Fondo gris oscuro */
+  color: #ffffff !important; /* LETRA BLANCA FORZADA */
   border: 1px solid #555 !important;
-  padding: 12px;
-  border-radius: 6px;
-  width: 100%;
-  font-family: 'Montserrat', sans-serif;
-  outline: none;
-  font-size: 1rem;
+  padding: 12px; border-radius: 6px; width: 100%;
+  font-family: 'Montserrat', sans-serif; outline: none; fontSize: 1rem;
 }
+input:focus, select:focus { border-color: var(--gold) !important; background-color: #333 !important; }
+option { background-color: var(--bg-dark); color: white; }
+label { color: var(--gold) !important; font-weight: bold; margin-bottom: 5px; display: block; }
 
-input::placeholder {
-  color: #888;
-}
+/* --- TARJETAS Y FORMULARIOS --- */
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; padding: 0 20px 40px; }
 
-input:focus, select:focus {
-  border-color: var(--gold) !important;
-  background-color: #333 !important;
-}
-
-/* Corrección para el texto dentro de los selects (opciones) */
-option {
-  background-color: var(--bg-dark);
-  color: white;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--gold); /* Etiquetas doradas para resaltar */
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-/* --- TARJETAS Y WIDGETS --- */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
-  padding: 0 20px 40px;
-}
-
-.widget, .match-card, form {
-  background-color: var(--card-dark); /* Fondo gris oscuro solido */
+/* El fondo de los formularios y tarjetas debe ser oscuro */
+.widget, .match-card, form, .login-container {
+  background-color: var(--card-dark) !important;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-
-/* Asegurar que el texto dentro de las tarjetas sea blanco */
-.widget h3, .match-card strong, form h2 {
-  color: var(--text-white);
-}
-
-.widget-item {
-  border-bottom: 1px solid var(--border-color);
-  padding: 12px 0;
+  border-radius: 12px; padding: 25px;
+  color: var(--text-white) !important;
 }
 
 /* --- BOTONES --- */
 button, .cta-button {
-  background: var(--gold);
-  color: #000; /* Letras negras para contraste con dorado */
-  border: none;
-  padding: 10px 20px;
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: 0.3s;
-  border-radius: 4px;
+  background: var(--gold); color: #000 !important; /* Letra negra en botón dorado */
+  border: none; padding: 10px 20px; font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; cursor: pointer; borderRadius: 4px;
 }
-
-button:hover {
-  background: var(--text-white);
-  transform: translateY(-2px);
-}
-
-/* Botones de acción específicos */
-.delete-btn { background-color: #ff4d4d; color: white; }
-.edit-btn { background-color: var(--gold); color: black; }
+button:hover { background: var(--text-white); }
+.delete-btn { background-color: #ff4d4d; color: white !important; }
 
 /* --- TABLAS --- */
-.standings-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--card-dark);
-  margin-top: 20px;
-}
-
-.standings-table th {
-  background: #000;
-  color: var(--gold);
-  padding: 15px;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-}
-
-.standings-table td {
-  padding: 15px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-white);
-}
-
-.standings-table tr:hover {
-  background-color: #2a2a2a;
-}
+.standings-table { width: 100%; border-collapse: collapse; background: var(--card-dark); margin-top: 20px; }
+.standings-table th { background: #000; color: var(--gold) !important; padding: 15px; }
+.standings-table td { padding: 15px; border-bottom: 1px solid var(--border-color); color: white !important; }
+.standings-table tr:hover { background-color: #2a2a2a; }
 
 /* --- FOOTER --- */
-.luxury-footer {
-  background: #000;
-  border-top: 1px solid var(--border-color);
-  padding: 50px 20px;
-  text-align: center;
-  color: #666;
-}
+.luxury-footer { background: #000; border-top: 1px solid var(--border-color); padding: 50px 20px; text-align: center; color: #888 !important; }
