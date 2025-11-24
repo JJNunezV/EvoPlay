@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
 import api from './api';
 
@@ -14,33 +13,19 @@ import SiteConfigPage from './pages/SiteConfigPage';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  in: { opacity: 1, y: 0 },
-  out: { opacity: 0, y: -20 }
-};
-
-const pageTransition = { type: 'tween', ease: 'anticipate', duration: 0.5 };
-
-const AnimatedPage = ({ children }) => (
-  <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-    {children}
-  </motion.div>
-);
-
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  // Iniciamos con un objeto vacío seguro en lugar de null
+  
+  // Valores por defecto para que NUNCA esté vacío
   const [config, setConfig] = useState({
     colores: { primary: '#c5a059', secondary: '#0e0e0e' },
     header: { titulo: 'EVOPLAY', subtitulo: 'LEAGUE' },
     hero: {},
     pages: { home: [] },
-    footer: {}
+    footer: { texto: 'Cargando...', contacto: '' }
   });
   
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const applyTheme = async () => {
@@ -48,11 +33,9 @@ function App() {
         const { data } = await api.get('/api/config');
         if (data) {
           setConfig(data);
-          // Aplicar colores de forma segura
           const root = document.documentElement;
           if (data.colores?.primary) root.style.setProperty('--gold', data.colores.primary);
           if (data.colores?.secondary) root.style.setProperty('--bg-dark', data.colores.secondary);
-          
           if (data.style?.fontFamily) document.body.className = data.style.fontFamily;
         }
       } catch (error) {
@@ -71,6 +54,7 @@ function App() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
+      {/* HEADER */}
       <nav>
         <div className="nav-logo">
           {config.header?.titulo || 'EVOPLAY'} 
@@ -98,19 +82,23 @@ function App() {
         </div>
       </nav>
       
+      {/* CONTENIDO (Sin animaciones de opacidad para evitar pantalla negra) */}
       <div style={{flex: 1}}>
-        <AnimatePresence mode='wait'>
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<AnimatedPage><HomePage customConfig={config} /></AnimatedPage>} />
-            <Route path="/login" element={<AnimatedPage><LoginPage onLoginSuccess={handleLogin} /></AnimatedPage>} />
-            <Route path="/partidos" element={<AnimatedPage><MatchesPage /></AnimatedPage>} />
-            <Route path="/tabla" element={<AnimatedPage><StandingsPage /></AnimatedPage>} />
-            <Route path="/equipos/:id" element={<AnimatedPage><TeamDetailPage /></AnimatedPage>} />
-            
-            <Route path="/equipos" element={<ProtectedRoute><AnimatedPage><TeamsPage /></AnimatedPage></ProtectedRoute>} />
-            <Route path="/config" element={<ProtectedRoute><AnimatedPage><SiteConfigPage /></AnimatedPage></ProtectedRoute>} />
-          </Routes>
-        </AnimatePresence>
+        <Routes>
+          <Route path="/" element={<HomePage customConfig={config} />} />
+          <Route path="/login" element={<LoginPage onLoginSuccess={handleLogin} />} />
+          <Route path="/partidos" element={<MatchesPage />} />
+          <Route path="/tabla" element={<StandingsPage />} />
+          <Route path="/equipos/:id" element={<TeamDetailPage />} />
+          
+          <Route path="/equipos" element={
+            <ProtectedRoute><TeamsPage /></ProtectedRoute>
+          } />
+          
+          <Route path="/config" element={
+            <ProtectedRoute><SiteConfigPage /></ProtectedRoute>
+          } />
+        </Routes>
       </div>
 
       <Footer customConfig={config} />
