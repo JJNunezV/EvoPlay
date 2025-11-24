@@ -1,17 +1,14 @@
 const mongoose = require('mongoose');
 
 const configSchema = new mongoose.Schema({
-  // Identificador único (siempre usaremos el mismo documento)
   id: { type: String, default: 'global_config' },
   
-  // --- COLORES ---
   colores: {
-    primary: { type: String, default: '#c5a059' },    // El Dorado actual
-    secondary: { type: String, default: '#0e0e0e' },  // El Negro actual
-    text: { type: String, default: '#ffffff' }         // Texto blanco
+    primary: { type: String, default: '#c5a059' },
+    secondary: { type: String, default: '#0e0e0e' },
+    text: { type: String, default: '#ffffff' }
   },
 
-  // --- TEXTOS E IMAGENES ---
   hero: {
     titulo: { type: String, default: 'EVOPLAY LEAGUE' },
     subtitulo: { type: String, default: 'TORNEO CLAUSURA 2025' },
@@ -21,6 +18,21 @@ const configSchema = new mongoose.Schema({
   footer: {
     texto: { type: String, default: 'La plataforma exclusiva para la gestión deportiva.' },
     contacto: { type: String, default: 'contacto@evoplay.com' }
+  },
+
+  // 👇 NUEVA SECCIÓN: CONTROL DE DISEÑO
+  layout: {
+    home: {
+      // Definimos qué widget va en qué posición
+      section1: { type: String, default: 'upcoming' }, // upcoming, recent, scorers, none
+      section2: { type: String, default: 'recent' },
+      section3: { type: String, default: 'scorers' },
+      
+      // Títulos personalizados para cada sección
+      title1: { type: String, default: '🔥 Próximos Partidos' },
+      title2: { type: String, default: '📊 Resultados Recientes' },
+      title3: { type: String, default: '🏆 Goleadores' }
+    }
   }
 }, { timestamps: true });
 
