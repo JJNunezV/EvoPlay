@@ -7,8 +7,8 @@ const partidoSchema = new Schema({
   golesLocal: { type: Number, default: 0 },
   golesVisitante: { type: Number, default: 0 },
   fecha: { type: Date, required: true },
-  // 👇 NUEVO CAMPO: Indica si el partido ya se jugó
-  finalizado: { type: Boolean, default: true }, 
+  finalizado: { type: Boolean, default: true },
+  
   detallesGoles: [{
     jugadorId: String,
     nombreJugador: String,
@@ -17,7 +17,17 @@ const partidoSchema = new Schema({
     minuto: Number,
     equipo: String,
     esAutogol: { type: Boolean, default: false }
+  }],
+
+  // 👇 NUEVO: Historial de Tarjetas
+  detallesTarjetas: [{
+    jugadorId: String,
+    nombreJugador: String,
+    tipo: { type: String, enum: ['Amarilla', 'Roja'] },
+    minuto: Number,
+    equipo: String // 'local' o 'visitante'
   }]
+
 }, { timestamps: true });
 
 const Partido = mongoose.model('Partido', partidoSchema);

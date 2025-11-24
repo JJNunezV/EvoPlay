@@ -1,139 +1,151 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-function CreateTeamForm({ onTeamCreated }) {
-  const [nombre, setNombre] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [categoria, setCategoria] = useState('Fútbol 7');
-  
-  // Ahora jugadores es una lista de objetos desde el principio
-  const [jugadores, setJugadores] = useState([]);
+function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
+  const [teams, setTeams] = useState([]);
+  const [localId, setLocalId] = useState('');
+  const [visitanteId, setVisitanteId] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [esProgramado, setEsProgramado] = useState(true);
 
-  // Función para agregar una fila de jugador vacía
-  const addPlayer = () => {
-    setJugadores([...jugadores, { nombre: '', posicion: 'Medio', rol: 'Titular' }]);
+  const [scoreLocal, setScoreLocal] = useState(0);
+  const [scoreVisitante, setScoreVisitante] = useState(0);
+  const [eventosGol, setEventosGol] = useState([]);
+  const [eventosTarjeta, setEventosTarjeta] = useState([]); // <-- NUEVO
+
+  // Inputs temporales
+  const [golTemp, setGolTemp] = useState({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
+  const [tarjetaTemp, setTarjetaTemp] = useState({ jugadorId: '', tipo: 'Amarilla', minuto: '' }); // <-- NUEVO
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try { const res = await api.get('/api/equipos'); setTeams(res.data); } catch (e) {}
+    };
+    fetchTeams();
+    if (matchToPlay) {
+      setLocalId(matchToPlay.equipoLocal._id || matchToPlay.equipoLocal);
+      setVisitanteId(matchToPlay.equipoVisitante._id || matchToPlay.equipoVisitante);
+      setFecha(new Date(matchToPlay.fecha).toISOString().split('T')[0]);
+      setEsProgramado(false);
+    }
+  }, [matchToPlay]);
+
+  const teamLocalObj = teams.find(t => t._id === localId);
+  const teamVisitanteObj = teams.find(t => t._id === visitanteId);
+
+  // --- AGREGAR GOL ---
+  const agregarEventoGol = (esLocal) => {
+    if (!golTemp.jugadorId) return alert("Elige jugador");
+    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
+    const jug = eq.jugadores.find(j => j._id === golTemp.jugadorId);
+    
+    if (esLocal) { golTemp.esAutogol ? setScoreVisitante(s=>s+1) : setScoreLocal(s=>s+1); }
+    else { golTemp.esAutogol ? setScoreLocal(s=>s+1) : setScoreVisitante(s=>s+1); }
+
+    setEventosGol([...eventosGol, { ...golTemp, nombreJugador: jug.nombre, equipo: esLocal?'local':'visitante' }]);
+    setGolTemp({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
   };
 
-  // Función para actualizar datos de un jugador específico
-  const handlePlayerChange = (index, field, value) => {
-    const newJugadores = [...jugadores];
-    newJugadores[index][field] = value;
-    setJugadores(newJugadores);
-  };
+  // --- AGREGAR TARJETA ---
+  const agregarTarjeta = (esLocal) => {
+    if (!tarjetaTemp.jugadorId) return alert("Elige jugador");
+    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
+    const jug = eq.jugadores.find(j => j._id === tarjetaTemp.jugadorId);
 
-  // Función para eliminar un jugador de la lista
-  const removePlayer = (index) => {
-    const newJugadores = jugadores.filter((_, i) => i !== index);
-    setJugadores(newJugadores);
+    setEventosTarjeta([...eventosTarjeta, { ...tarjetaTemp, nombreJugador: jug.nombre, equipo: esLocal?'local':'visitante' }]);
+    setTarjetaTemp({ jugadorId: '', tipo: 'Amarilla', minuto: '' });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validar que no haya nombres vacíos
-    const jugadoresValidos = jugadores.filter(j => j.nombre.trim() !== '');
-
-    const equipoParaEnviar = {
-      nombre,
-      logoUrl,
-      categoria,
-      jugadores: jugadoresValidos
+    const payload = {
+      equipoLocal: localId, equipoVisitante: visitanteId, fecha, finalizado: !esProgramado,
+      golesLocal: esProgramado ? 0 : scoreLocal,
+      golesVisitante: esProgramado ? 0 : scoreVisitante,
+      detallesGoles: esProgramado ? [] : eventosGol,
+      detallesTarjetas: esProgramado ? [] : eventosTarjeta // <-- ENVIAMOS TARJETAS
     };
-
     try {
-      await api.post('/api/equipos', equipoParaEnviar);
-      alert(`¡Equipo "${nombre}" creado con ${jugadoresValidos.length} jugadores!`);
-      
-      // Limpiar todo
-      setNombre(''); setLogoUrl(''); setCategoria('Fútbol 7'); setJugadores([]);
-      onTeamCreated();
+      if (matchToPlay) await api.put(`/api/partidos/${matchToPlay._id}`, payload);
+      else await api.post('/api/partidos', payload);
+      alert('¡Guardado!');
+      onMatchCreated();
+      if(onCancel) onCancel();
+      if(!matchToPlay) { setLocalId(''); setVisitanteId(''); setFecha(''); setEventosGol([]); setEventosTarjeta([]); }
+    } catch (e) { alert('Error'); }
+  };
 
-    } catch (error) {
-      console.error('Error al crear el equipo:', error);
-      alert('Hubo un error al crear el equipo.');
-    }
+  // Renderizador de controles por equipo
+  const renderInputZone = (esLocal) => {
+    const equipo = esLocal ? teamLocalObj : teamVisitanteObj;
+    if (!equipo) return null;
+    return (
+      <div style={{marginBottom:'15px', padding:'15px', background: esLocal?'#1e293b':'#3f1a1a', borderRadius:'8px', border: `1px solid ${esLocal?'#3b82f6':'#ef4444'}`}}>
+        <h4 style={{margin:'0 0 10px 0', color: esLocal?'#60a5fa':'#fca5a5'}}>{equipo.nombre}</h4>
+        
+        {/* GOLES */}
+        <div style={{marginBottom:'15px'}}>
+          <div style={{display:'flex', gap:'5px'}}>
+            <select style={{flex:2}} value={golTemp.jugadorId} onChange={e=>setGolTemp({...golTemp, jugadorId:e.target.value})}>
+              <option value="">-- Goleador --</option>
+              {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+            <button type="button" onClick={()=>agregarEventoGol(esLocal)} style={{background:'#22c55e', border:'none', color:'white', borderRadius:'4px'}}>⚽</button>
+          </div>
+        </div>
+
+        {/* TARJETAS */}
+        <div style={{display:'flex', gap:'5px', borderTop:'1px dashed #555', paddingTop:'10px'}}>
+           <select style={{flex:2}} value={tarjetaTemp.jugadorId} onChange={e=>setTarjetaTemp({...tarjetaTemp, jugadorId:e.target.value})}>
+              <option value="">-- Sancionado --</option>
+              {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+            <select style={{width:'80px'}} value={tarjetaTemp.tipo} onChange={e=>setTarjetaTemp({...tarjetaTemp, tipo:e.target.value})}>
+              <option value="Amarilla">🟨</option>
+              <option value="Roja">🟥</option>
+            </select>
+            <button type="button" onClick={()=>agregarTarjeta(esLocal)} style={{background:'#eab308', border:'none', color:'black', borderRadius:'4px'}}>Tarjeta</button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{padding: '20px', border: '1px solid #ddd', borderRadius: '8px', background: 'white'}}>
-      <h2>Añadir Nuevo Equipo</h2>
+    <form onSubmit={handleSubmit} style={{border: '2px solid #333', padding: '20px', borderRadius: '8px', background:'#121212'}}>
+      <h2 style={{marginTop:0, color: '#fff'}}>{matchToPlay ? '⚽ Jugar' : '📅 Programar'}</h2>
       
-      <div style={{marginBottom: '10px'}}>
-        <label>Categoría:</label>
-        <select value={categoria} onChange={e => setCategoria(e.target.value)} style={{width:'100%', padding:'8px'}}>
-          <option value="Fútbol 7">Fútbol 7</option>
-          <option value="Fútbol 11">Fútbol 11</option>
-          <option value="Fútbol Rápido">Fútbol Rápido</option>
-          <option value="Pádel">Pádel</option>
-          <option value="Voleibol">Voleibol</option>
-        </select>
+      <div style={{marginBottom: '20px', display: 'flex', gap: '20px'}}>
+        <label style={{color:'white'}}><input type="radio" checked={esProgramado} onChange={() => setEsProgramado(true)} disabled={!!matchToPlay} /> Programar</label>
+        <label style={{color:'white'}}><input type="radio" checked={!esProgramado} onChange={() => setEsProgramado(false)} /> Jugar</label>
       </div>
 
-      <div style={{marginBottom: '10px'}}>
-        <label>Nombre del Equipo:</label>
-        <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required style={{width:'100%', padding:'8px'}} />
+      <div style={{display: 'flex', gap: '10px', marginBottom:'20px'}}>
+        <select value={localId} onChange={e=>{setLocalId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Local</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
+        <select value={visitanteId} onChange={e=>{setVisitanteId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Visitante</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
       </div>
-      
-      <div style={{marginBottom: '20px'}}>
-        <label>URL del Logo:</label>
-        <input type="text" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} style={{width:'100%', padding:'8px'}} />
-      </div>
-      
-      {/* SECCIÓN DE JUGADORES */}
-      <h3 style={{borderBottom:'1px solid #eee', paddingBottom:'5px'}}>Plantilla de Jugadores</h3>
-      
-      {jugadores.length === 0 && <p style={{color:'#777', fontSize:'0.9rem'}}>No has agregado jugadores aún.</p>}
 
-      {jugadores.map((player, index) => (
-        <div key={index} style={{display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
-          {/* Nombre */}
-          <input 
-            type="text" 
-            placeholder="Nombre del Jugador"
-            value={player.nombre} 
-            onChange={e => handlePlayerChange(index, 'nombre', e.target.value)}
-            required
-            style={{flex: 3, padding: '8px'}}
-          />
+      {!esProgramado && localId && visitanteId && (
+        <>
+          <div style={{textAlign:'center', fontSize:'3rem', fontWeight:'bold', color:'white'}}>{scoreLocal} - {scoreVisitante}</div>
+          <div style={{display:'flex', gap:'20px'}}>{renderInputZone(true)}{renderInputZone(false)}</div>
           
-          {/* Posición */}
-          <select 
-            value={player.posicion} 
-            onChange={e => handlePlayerChange(index, 'posicion', e.target.value)}
-            style={{flex: 2, padding: '8px'}}
-          >
-            <option value="Portero">Portero</option>
-            <option value="Defensa">Defensa</option>
-            <option value="Medio">Medio</option>
-            <option value="Delantero">Delantero</option>
-          </select>
+          {/* Resumen de Tarjetas */}
+          {eventosTarjeta.length > 0 && (
+            <div style={{background:'#222', padding:'10px', marginTop:'10px', borderRadius:'5px'}}>
+              <strong style={{color:'white'}}>Tarjetas:</strong>
+              {eventosTarjeta.map((t,i) => (
+                <div key={i} style={{color:'#ccc', fontSize:'0.9rem'}}>
+                  {t.tipo === 'Amarilla' ? '🟨' : '🟥'} {t.nombreJugador} ({t.equipo})
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-          {/* Rol (Titular/Suplente) */}
-          <select 
-            value={player.rol} 
-            onChange={e => handlePlayerChange(index, 'rol', e.target.value)}
-            style={{flex: 2, padding: '8px', backgroundColor: player.rol === 'Titular' ? '#d4edda' : '#f8d7da'}}
-          >
-            <option value="Titular">Titular</option>
-            <option value="Suplente">Suplente</option>
-          </select>
-
-          {/* Botón Borrar */}
-          <button type="button" onClick={() => removePlayer(index)} style={{background:'red', color:'white', border:'none', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>
-            X
-          </button>
-        </div>
-      ))}
-
-      <button type="button" onClick={addPlayer} style={{marginBottom: '20px', width:'100%', padding:'8px', background:'#28a745', color:'white', border:'none', borderRadius:'5px', cursor:'pointer'}}>
-        + Agregar Jugador
-      </button>
-      
-      <button type="submit" style={{width: '100%', padding: '12px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize:'1.1rem'}}>
-        Guardar Equipo
-      </button>
+      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required style={{marginTop:'20px', display:'block', width:'100%'}} />
+      <button type="submit" style={{marginTop:'10px', width:'100%', padding:'15px', background:'var(--gold)', border:'none', fontWeight:'bold'}}>GUARDAR</button>
     </form>
   );
 }
-
-export default CreateTeamForm;
+export default CreateMatchForm;
