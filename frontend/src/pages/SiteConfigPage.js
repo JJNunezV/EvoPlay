@@ -3,205 +3,191 @@ import api from '../api';
 
 function SiteConfigPage() {
   const [config, setConfig] = useState(null);
+  const [activeTab, setActiveTab] = useState('general'); // Pestañas: general, home, footer
   const [loading, setLoading] = useState(false);
 
-  // 1. Cargar la configuración actual desde la Nube
   useEffect(() => {
     api.get('/api/config').then(res => {
       const data = res.data;
-      // Aseguramos que existan los objetos para que no truene si es nuevo
-      if (!data.colores) data.colores = { primary: '#c5a059', secondary: '#0e0e0e', text: '#ffffff' };
-      if (!data.hero) data.hero = { titulo: '', subtitulo: '', imagenFondo: '' };
+      if (!data.style) data.style = { fontFamily: 'font-modern', primaryColor: '#c5a059' };
       if (!data.pages) data.pages = { home: [] };
-      if (!data.footer) data.footer = { texto: '', contacto: '' };
-      
       setConfig(data);
     });
   }, []);
 
-  // --- MANEJADORES DE CAMBIOS ---
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await api.put('/api/config', config);
+      alert('¡Cambios guardados exitosamente!');
+      window.location.reload();
+    } catch (error) { alert('Error al guardar'); }
+    setLoading(false);
+  };
 
-  // Para campos simples (ej: footer.texto)
-  const handleChange = (section, field, value) => {
+  // Helpers de actualización
+  const updateConfig = (section, field, value) => {
+    setConfig(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+  };
+
+  // Helpers de Widgets (Drag/Drop/Add)
+  const addWidget = (type) => {
+    const titleMap = { upcoming: 'Próximos Partidos', recent: 'Resultados', scorers: 'Goleadores', text: 'Noticia / Aviso' };
+    const newWidget = { type, title: titleMap[type], content: '', isVisible: true };
     setConfig(prev => ({
       ...prev,
-      [section]: { ...prev[section], [field]: value }
+      pages: { ...prev.pages, home: [...prev.pages.home, newWidget] }
     }));
   };
 
-  // Para colores (actualiza el estado y la vista previa en vivo si quisieras)
-  const handleColorChange = (field, value) => {
-    setConfig(prev => ({
-      ...prev,
-      colores: { ...prev.colores, [field]: value }
-    }));
-  };
-
-  // --- LÓGICA DE SECCIONES (El constructor) ---
-  
-  const addWidget = (pageName) => {
-    const newWidget = { type: 'upcoming', title: 'Nueva Sección', isVisible: true };
-    setConfig(prev => ({
-      ...prev,
-      pages: { ...prev.pages, [pageName]: [...prev.pages[pageName], newWidget] }
-    }));
-  };
-
-  const removeWidget = (pageName, index) => {
-    if(!window.confirm("¿Eliminar esta sección?")) return;
-    const newWidgets = config.pages[pageName].filter((_, i) => i !== index);
-    setConfig(prev => ({
-      ...prev,
-      pages: { ...prev.pages, [pageName]: newWidgets }
-    }));
-  };
-
-  const updateWidget = (pageName, index, field, value) => {
-    const newWidgets = [...config.pages[pageName]];
+  const updateWidget = (index, field, value) => {
+    const newWidgets = [...config.pages.home];
     newWidgets[index][field] = value;
-    setConfig(prev => ({
-      ...prev,
-      pages: { ...prev.pages, [pageName]: newWidgets }
-    }));
+    setConfig(prev => ({ ...prev, pages: { ...prev.pages, home: newWidgets } }));
   };
 
-  const moveWidget = (pageName, index, direction) => {
-    const newWidgets = [...config.pages[pageName]];
+  const removeWidget = (index) => {
+    if(!window.confirm("¿Borrar esta sección?")) return;
+    const newWidgets = config.pages.home.filter((_, i) => i !== index);
+    setConfig(prev => ({ ...prev, pages: { ...prev.pages, home: newWidgets } }));
+  };
+
+  const moveWidget = (index, direction) => {
+    const newWidgets = [...config.pages.home];
     if (direction === 'up' && index > 0) {
       [newWidgets[index], newWidgets[index - 1]] = [newWidgets[index - 1], newWidgets[index]];
     } else if (direction === 'down' && index < newWidgets.length - 1) {
       [newWidgets[index], newWidgets[index + 1]] = [newWidgets[index + 1], newWidgets[index]];
     }
-    setConfig(prev => ({
-      ...prev,
-      pages: { ...prev.pages, [pageName]: newWidgets }
-    }));
+    setConfig(prev => ({ ...prev, pages: { ...prev.pages, home: newWidgets } }));
   };
 
-  // --- GUARDAR TODO ---
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      await api.put('/api/config', config);
-      alert('¡Sitio actualizado con éxito! La página se recargará para aplicar los cambios.');
-      window.location.reload();
-    } catch (error) {
-      console.error(error);
-      alert('Error al guardar la configuración.');
-    }
-    setLoading(false);
-  };
-
-  if (!config) return <div style={{padding:'50px', color:'white', textAlign:'center'}}>Cargando panel de Dios...</div>;
+  if (!config) return <div style={{padding:40, color:'white'}}>Cargando panel...</div>;
 
   return (
-    <div style={{padding: '20px', maxWidth: '1000px', margin: '0 auto', color: 'white', paddingBottom: '100px'}}>
-      
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
-        <h1>🛠️ Constructor de Sitio</h1>
-        <button onClick={handleSave} disabled={loading} style={{padding:'15px 30px', fontSize:'1rem', background:'var(--gold)', color:'black', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold'}}>
-          {loading ? 'Guardando...' : '💾 GUARDAR CAMBIOS'}
-        </button>
-      </div>
-
-      {/* 1. SECCIÓN DE COLORES Y ESTILO */}
-      <div className="widget" style={{marginBottom: '20px', background: '#1a1a1a', padding: '20px', borderTop: '4px solid #ff0055'}}>
-        <h3>🎨 Paleta de Colores Global</h3>
-        <div style={{display: 'flex', gap: '30px', flexWrap: 'wrap'}}>
-          <div>
-            <label style={{display:'block', marginBottom:'5px'}}>Color Principal (Dorado/Acento):</label>
-            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-              <input type="color" value={config.colores.primary} onChange={e => handleColorChange('primary', e.target.value)} style={{height: '50px', width: '50px', padding: 0, cursor:'pointer', border:'none'}}/>
-              <span>{config.colores.primary}</span>
-            </div>
-          </div>
-          <div>
-            <label style={{display:'block', marginBottom:'5px'}}>Color de Fondo (Oscuro/Claro):</label>
-            <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-              <input type="color" value={config.colores.secondary} onChange={e => handleColorChange('secondary', e.target.value)} style={{height: '50px', width: '50px', padding: 0, cursor:'pointer', border:'none'}}/>
-              <span>{config.colores.secondary}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. SECCIÓN DEL HEADER Y BANNER */}
-      <div className="widget" style={{marginBottom: '20px', background: '#1a1a1a', padding: '20px', borderTop: '4px solid #00d2ff'}}>
-        <h3>🚀 Cabecera y Banner Principal</h3>
+    <div className="admin-container">
+      {/* --- SIDEBAR (Menú Lateral) --- */}
+      <div className="admin-sidebar">
+        <h2 style={{color: config.style.primaryColor, padding:'0 15px'}}>EDITOR</h2>
+        <div className={`admin-tab ${activeTab === 'general' ? 'active' : ''}`} onClick={() => setActiveTab('general')}>🎨 Estilo & Banner</div>
+        <div className={`admin-tab ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>🏠 Página de Inicio</div>
+        <div className={`admin-tab ${activeTab === 'footer' ? 'active' : ''}`} onClick={() => setActiveTab('footer')}>🔻 Pie de Página</div>
         
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'20px'}}>
-          <div>
-            <label>Nombre de la Marca (Header):</label>
-            <input type="text" value={config.header.titulo} onChange={e => handleChange('header', 'titulo', e.target.value)} style={{width:'100%', marginTop:'5px'}} />
-          </div>
-          <div>
-            <label>Eslogan Pequeño (Header):</label>
-            <input type="text" value={config.header.subtitulo} onChange={e => handleChange('header', 'subtitulo', e.target.value)} style={{width:'100%', marginTop:'5px'}} />
-          </div>
-        </div>
-
-        <hr style={{borderColor:'#333'}}/>
-
-        <div style={{marginTop:'20px'}}>
-          <label>Título Gigante del Banner:</label>
-          <input type="text" value={config.hero.titulo} onChange={e => handleChange('hero', 'titulo', e.target.value)} style={{width:'100%', marginTop:'5px', fontSize:'1.2rem'}} />
-          
-          <label style={{marginTop:'15px', display:'block'}}>Subtítulo del Banner:</label>
-          <input type="text" value={config.hero.subtitulo} onChange={e => handleChange('hero', 'subtitulo', e.target.value)} style={{width:'100%', marginTop:'5px'}} />
-          
-          <label style={{marginTop:'15px', display:'block'}}>URL de la Imagen de Fondo:</label>
-          <input type="text" value={config.hero.imagenFondo} onChange={e => handleChange('hero', 'imagenFondo', e.target.value)} placeholder="https://..." style={{width:'100%', marginTop:'5px'}} />
-          {config.hero.imagenFondo && <img src={config.hero.imagenFondo} alt="preview" style={{marginTop:'10px', height:'100px', borderRadius:'8px', objectFit:'cover'}} />}
+        <div style={{marginTop:'auto'}}>
+          <button className="btn-primary" onClick={handleSave} disabled={loading}>
+            {loading ? 'Guardando...' : 'GUARDAR TODO'}
+          </button>
         </div>
       </div>
 
-      {/* 3. CONSTRUCTOR DE PÁGINA DE INICIO */}
-      <div className="widget" style={{marginBottom: '20px', background: '#222', padding: '20px', border: '2px solid var(--gold)', borderRadius:'8px'}}>
-        <h3 style={{color:'var(--gold)', borderBottom:'1px solid #444', paddingBottom:'10px'}}>🏠 Estructura de Página de Inicio (Drag & Drop Simulado)</h3>
-        <p style={{color:'#aaa', marginBottom:'20px'}}>Aquí decides qué secciones aparecen y en qué orden.</p>
+      {/* --- CONTENIDO PRINCIPAL --- */}
+      <div className="admin-content">
+        
+        {/* PESTAÑA: GENERAL */}
+        {activeTab === 'general' && (
+          <div>
+            <h1>Estilo General y Banner</h1>
+            <div className="form-group">
+              <label className="form-label">Color Principal (Marca)</label>
+              <div style={{display:'flex', gap:'10px'}}>
+                <input type="color" value={config.style.primaryColor} onChange={e => updateConfig('style', 'primaryColor', e.target.value)} style={{height:50, width:50, cursor:'pointer', border:'none'}}/>
+                <input type="text" className="styled-input" value={config.style.primaryColor} readOnly style={{width:150}}/>
+              </div>
+            </div>
 
-        {config.pages.home.map((widget, index) => (
-          <div key={index} style={{display: 'flex', gap: '10px', marginBottom: '10px', background: '#333', padding: '15px', borderRadius: '8px', alignItems: 'center', borderLeft:'4px solid #666'}}>
-            <span style={{color: '#fff', fontWeight: 'bold', fontSize:'1.2rem'}}>#{index + 1}</span>
-            
-            <div style={{flex: 1, display:'flex', flexDirection:'column', gap:'5px'}}>
-              <label style={{fontSize:'0.8rem', color:'#ccc'}}>Tipo de Sección:</label>
-              <select value={widget.type} onChange={e => updateWidget('home', index, 'type', e.target.value)} style={{padding:'8px', background:'#222', border:'1px solid #555', color:'white'}}>
-                <option value="upcoming">📅 Próximos Partidos</option>
-                <option value="recent">📊 Resultados Recientes</option>
-                <option value="scorers">🏆 Tabla de Goleadores</option>
-                <option value="text">📝 Texto Libre / Aviso</option>
+            <div className="form-group">
+              <label className="form-label">Tipografía (Fuente)</label>
+              <select className="styled-select" value={config.style.fontFamily} onChange={e => updateConfig('style', 'fontFamily', e.target.value)}>
+                <option value="font-modern">Montserrat (Moderna & Limpia)</option>
+                <option value="font-sport">Oswald (Deportiva & Fuerte)</option>
+                <option value="font-classic">Playfair (Elegante & Seria)</option>
+                <option value="font-tech">Roboto Mono (Técnica)</option>
               </select>
             </div>
 
-            <div style={{flex: 2, display:'flex', flexDirection:'column', gap:'5px'}}>
-              <label style={{fontSize:'0.8rem', color:'#ccc'}}>Título Visible:</label>
-              <input type="text" value={widget.title} onChange={e => updateWidget('home', index, 'title', e.target.value)} style={{width:'100%', padding:'8px'}} />
+            <hr style={{borderColor:'#333', margin:'30px 0'}}/>
+            
+            <h3>Banner Principal</h3>
+            <div className="form-group">
+              <label className="form-label">Título Gigante</label>
+              <input type="text" className="styled-input" value={config.hero.titulo} onChange={e => updateConfig('hero', 'titulo', e.target.value)} />
             </div>
-
-            <div style={{display:'flex', gap:'5px'}}>
-              <button onClick={() => moveWidget('home', index, 'up')} disabled={index === 0} style={{background: '#555', padding: '10px', cursor:'pointer'}}>⬆</button>
-              <button onClick={() => moveWidget('home', index, 'down')} disabled={index === config.pages.home.length - 1} style={{background: '#555', padding: '10px', cursor:'pointer'}}>⬇</button>
-              <button onClick={() => removeWidget('home', index)} style={{background: '#dc3545', padding: '10px', cursor:'pointer'}}>✖</button>
+            <div className="form-group">
+              <label className="form-label">Subtítulo</label>
+              <input type="text" className="styled-input" value={config.hero.subtitulo} onChange={e => updateConfig('hero', 'subtitulo', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">URL Imagen de Fondo</label>
+              <input type="text" className="styled-input" value={config.hero.imagenFondo} onChange={e => updateConfig('hero', 'imagenFondo', e.target.value)} />
             </div>
           </div>
-        ))}
+        )}
 
-        <button onClick={() => addWidget('home')} style={{marginTop: '15px', background: '#28a745', width: '100%', padding: '12px', fontSize:'1rem', fontWeight:'bold', cursor:'pointer', color:'white', border:'none', borderRadius:'5px'}}>
-          + AGREGAR NUEVA SECCIÓN
-        </button>
+        {/* PESTAÑA: HOME LAYOUT */}
+        {activeTab === 'home' && (
+          <div>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <h1>Constructor de Inicio</h1>
+              <div style={{display:'flex', gap:'10px'}}>
+                <button className="btn-icon" style={{width:'auto', padding:'0 15px'}} onClick={() => addWidget('text')}>+ Noticia</button>
+                <button className="btn-icon" style={{width:'auto', padding:'0 15px'}} onClick={() => addWidget('upcoming')}>+ Partidos</button>
+              </div>
+            </div>
+            
+            <p style={{color:'#666', marginBottom:'20px'}}>Arrastra mentalmente: Usa las flechas para ordenar qué sale primero.</p>
+
+            {config.pages.home.map((widget, index) => (
+              <div key={index} className="draggable-item">
+                <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'5px'}}>
+                  <button className="btn-icon" onClick={() => moveWidget(index, 'up')}>⬆</button>
+                  <span style={{color:'#666', fontWeight:'bold'}}>{index + 1}</span>
+                  <button className="btn-icon" onClick={() => moveWidget(index, 'down')}>⬇</button>
+                </div>
+
+                <div style={{flex: 1}}>
+                  <div style={{display:'flex', gap:'10px', marginBottom:'5px'}}>
+                    <span className="badge">{widget.type}</span>
+                    <input type="text" className="styled-input" style={{padding:'5px', fontSize:'0.9rem'}} 
+                           value={widget.title} onChange={e => updateWidget(index, 'title', e.target.value)} placeholder="Título de la sección"/>
+                  </div>
+                  
+                  {/* Si es tipo TEXTO, mostramos el área para escribir */}
+                  {widget.type === 'text' && (
+                    <textarea className="styled-textarea" rows="3" placeholder="Escribe aquí el contenido de la noticia..."
+                              value={widget.content} onChange={e => updateWidget(index, 'content', e.target.value)}></textarea>
+                  )}
+                </div>
+
+                <button className="btn-icon btn-delete" onClick={() => removeWidget(index)}>✖</button>
+              </div>
+            ))}
+
+            <div style={{marginTop:'20px', display:'flex', gap:'10px', flexWrap:'wrap'}}>
+              <small style={{color:'#666'}}>Agregar más:</small>
+              <button onClick={() => addWidget('upcoming')} style={{background:'none', border:'1px solid #444', color:'white', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Próximos</button>
+              <button onClick={() => addWidget('recent')} style={{background:'none', border:'1px solid #444', color:'white', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Resultados</button>
+              <button onClick={() => addWidget('scorers')} style={{background:'none', border:'1px solid #444', color:'white', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Goleadores</button>
+              <button onClick={() => addWidget('text')} style={{background:'none', border:'1px solid #444', color:'var(--gold)', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Texto/Noticia</button>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: FOOTER */}
+        {activeTab === 'footer' && (
+          <div>
+            <h1>Pie de Página</h1>
+            <div className="form-group">
+              <label className="form-label">Texto de Derechos de Autor / Slogan</label>
+              <textarea className="styled-textarea" rows="4" value={config.footer.texto} onChange={e => updateConfig('footer', 'texto', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email de Contacto</label>
+              <input type="text" className="styled-input" value={config.footer.contacto} onChange={e => updateConfig('footer', 'contacto', e.target.value)} />
+            </div>
+          </div>
+        )}
+
       </div>
-
-      {/* 4. EDITOR DE FOOTER */}
-      <div className="widget" style={{marginBottom: '20px', background: '#1a1a1a', padding: '20px', borderTop: '4px solid #888'}}>
-        <h3>🔻 Pie de Página (Footer)</h3>
-        <label>Texto de Copyright / Marca:</label>
-        <input type="text" value={config.footer.texto} onChange={e => handleChange('footer', 'texto', e.target.value)} style={{width:'100%', marginTop:'5px', marginBottom:'15px'}} />
-        
-        <label>Email de Contacto:</label>
-        <input type="text" value={config.footer.contacto} onChange={e => handleChange('footer', 'contacto', e.target.value)} style={{width:'100%', marginTop:'5px'}} />
-      </div>
-
     </div>
   );
 }
