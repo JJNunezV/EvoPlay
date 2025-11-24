@@ -5,23 +5,10 @@ import TopScorersWidget from '../components/TopScorersWidget';
 import RecentMatchesWidget from '../components/RecentMatchesWidget';
 
 function HomePage({ customConfig }) {
-  const [data, setData] = useState({
-    upcoming: [],
-    recent: [],
-    scorers: []
-  });
+  const [data, setData] = useState({ upcoming: [], recent: [], scorers: [] });
 
-  // Valores por defecto si la config aún no carga
-  const heroTitle = customConfig?.hero?.titulo || 'EVOPLAY LEAGUE';
-  const heroSubtitle = customConfig?.hero?.subtitulo || 'TORNEO CLAUSURA 2025';
-  const bgImage = customConfig?.hero?.imagenFondo || 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831';
-
-  // Configuración del Layout (o valores default si es la primera vez)
-  const layout = customConfig?.layout?.home || {
-    section1: 'upcoming', title1: '🔥 Matchday',
-    section2: 'recent',   title2: '📊 Resultados',
-    section3: 'scorers',  title3: '🏆 Goleadores'
-  };
+  // Obtenemos la lista de widgets desde la config (o un array vacío si no existe)
+  const widgets = customConfig?.pages?.home || [];
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,67 +18,47 @@ function HomePage({ customConfig }) {
           api.get('/api/partidos/recientes'),
           api.get('/api/equipos/stats/goleadores')
         ]);
-        setData({
-          upcoming: upRes.data,
-          recent: recRes.data,
-          scorers: scRes.data
-        });
+        setData({ upcoming: upRes.data, recent: recRes.data, scorers: scRes.data });
       } catch (error) { console.error("Error cargando datos", error); }
     };
     loadData();
   }, []);
 
-  // Función mágica para renderizar el componente correcto según el nombre
-  const renderWidget = (type, title) => {
-    if (type === 'none') return null;
-    
-    return (
-      <div style={{marginBottom: '30px'}}>
-        {title && <h2 style={{fontSize:'1.5rem', marginBottom:'15px'}}>{title}</h2>}
-        
-        {type === 'upcoming' && <UpcomingMatchesWidget matches={data.upcoming} />}
-        {type === 'recent' && <RecentMatchesWidget matches={data.recent} />}
-        {type === 'scorers' && <TopScorersWidget scorers={data.scorers} />}
-      </div>
-    );
+  // Función que decide qué componente pintar
+  const renderWidget = (widget, index) => {
+    const title = <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'10px', marginBottom:'20px'}}>{widget.title}</h2>;
+
+    switch (widget.type) {
+      case 'banner':
+        return (
+          <div key={index} className="hero-section" style={{marginBottom: '40px'}}>
+            <div className="hero-content">
+              <h1>{widget.title}</h1>
+              <p>{customConfig?.hero?.subtitulo}</p>
+            </div>
+          </div>
+        );
+      case 'upcoming':
+        return <div key={index} style={{marginBottom:'40px'}}>{title}<UpcomingMatchesWidget matches={data.upcoming} /></div>;
+      case 'recent':
+        return <div key={index} style={{marginBottom:'40px'}}>{title}<RecentMatchesWidget matches={data.recent} /></div>;
+      case 'scorers':
+        return <div key={index} style={{marginBottom:'40px'}}>{title}<TopScorersWidget scorers={data.scorers} /></div>;
+      case 'text':
+        return <div key={index} className="widget" style={{marginBottom:'40px'}}><h3>{widget.title}</h3><p>Texto personalizado...</p></div>;
+      default:
+        return null;
+    }
   };
 
   return (
     <div>
-      {/* HERO BANNER */}
-      <div className="hero-section" style={{
-        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg-dark)), url('${bgImage}')`
-      }}>
-        <div className="hero-content">
-          <p>{heroSubtitle}</p>
-          <h1>{heroTitle}</h1>
-          <button style={{marginTop: '20px', fontSize: '1.2rem', padding: '15px 40px'}}>VER RESULTADOS</button>
-        </div>
-      </div>
-
-      {/* LAYOUT DINÁMICO */}
-      <div className="main-container">
-        <div className="dashboard-grid">
-          
-          {/* Columna Izquierda (Flexible) */}
-          <div style={{display:'flex', flexDirection:'column'}}>
-            {renderWidget(layout.section1, layout.title1)}
-            {renderWidget(layout.section2, layout.title2)}
-          </div>
-
-          {/* Columna Derecha (Lateral) */}
-          <div>
-            {renderWidget(layout.section3, layout.title3)}
-            
-            {/* Widget Fijo de Publicidad (Opcional) */}
-            <div className="widget" style={{background: 'linear-gradient(45deg, #1a1a1a, #2a2a2a)'}}>
-                <h3 style={{color: 'white'}}>ÚNETE A LA LIGA</h3>
-                <p style={{color: '#aaa', fontSize: '0.9rem'}}>Inscripciones abiertas.</p>
-                <button style={{width: '100%', marginTop:'10px', background: 'transparent', border: '1px solid #fff', color: '#fff'}}>CONTACTO</button>
-            </div>
-          </div>
-
-        </div>
+      {/* Si no hay widgets configurados, mostramos un mensaje */}
+      {widgets.length === 0 && <p style={{textAlign:'center', marginTop:'50px'}}>Sitio en construcción / Configuración vacía.</p>}
+      
+      {/* Renderizamos la lista de widgets en el orden que vienen */}
+      <div className="main-container" style={{paddingTop: '20px'}}>
+        {widgets.map((widget, index) => renderWidget(widget, index))}
       </div>
     </div>
   );

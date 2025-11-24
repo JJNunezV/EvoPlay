@@ -71,6 +71,15 @@ function App() {
           {isAuthenticated ? <button onClick={handleLogout} className="logout-btn">Salir</button> : <Link to="/login" className="nav-item">Admin</Link>}
         </div>
       </nav>
+
+      
+      <div className="nav-logo">
+       {/* Usamos config o valores por defecto */}
+         {config?.header?.titulo || 'EVOPLAY'} 
+         <span style={{color:'#c5a059', fontSize:'0.5em', marginLeft:'5px'}}>
+        {config?.header?.subtitulo || 'LEAGUE'}
+       </span>
+      </div>
       
       <div style={{flex: 1}}>
         <AnimatePresence mode='wait'>
