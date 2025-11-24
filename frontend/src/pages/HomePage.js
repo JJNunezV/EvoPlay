@@ -5,22 +5,27 @@ import TopScorersWidget from '../components/TopScorersWidget';
 import RecentMatchesWidget from '../components/RecentMatchesWidget';
 
 function HomePage({ customConfig }) {
-  const [data, setData] = useState({ upcoming: [], recent: [], scorers: [] });
+  // Inicializamos con arrays vacíos para evitar errores
+  const [data, setData] = useState({
+    upcoming: [],
+    recent: [],
+    scorers: []
+  });
   const [loading, setLoading] = useState(true);
 
-  // Si customConfig no está listo, usamos un objeto seguro
+  // Configuración segura: si falla la config, usamos defaults
   const safeConfig = customConfig || { hero: {}, pages: { home: [] } };
-  
   const heroTitle = safeConfig.hero?.titulo || 'EVOPLAY LEAGUE';
   const heroSubtitle = safeConfig.hero?.subtitulo || 'TORNEO CLAUSURA';
   const bgImage = safeConfig.hero?.imagenFondo || 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831';
   
-  // Si la lista de widgets está vacía, ponemos unos por defecto para que no se vea vacío
-  const widgets = (safeConfig.pages?.home?.length > 0) 
+  // Si la configuración de widgets está vacía o mal formada, usamos la default
+  const widgets = (safeConfig.pages?.home && Array.isArray(safeConfig.pages.home) && safeConfig.pages.home.length > 0) 
     ? safeConfig.pages.home 
     : [
         { type: 'banner', title: 'Bienvenido', isVisible: true },
         { type: 'upcoming', title: 'Próximos Partidos', isVisible: true },
+        { type: 'recent', title: 'Resultados', isVisible: true },
         { type: 'scorers', title: 'Goleadores', isVisible: true }
       ];
 
@@ -32,9 +37,19 @@ function HomePage({ customConfig }) {
           api.get('/api/partidos/recientes'),
           api.get('/api/equipos/stats/goleadores')
         ]);
-        setData({ upcoming: upRes.data, recent: recRes.data, scorers: scRes.data });
+        
+        // BLINDAJE: Solo guardamos si lo que llegó es un Array real.
+        // Si el servidor mandó error o HTML, guardamos array vacío []
+        setData({
+          upcoming: Array.isArray(upRes.data) ? upRes.data : [],
+          recent: Array.isArray(recRes.data) ? recRes.data : [],
+          scorers: Array.isArray(scRes.data) ? scRes.data : []
+        });
+
       } catch (error) {
-        console.error("Error cargando datos", error);
+        console.error("Error cargando datos del dashboard", error);
+        // En caso de error, mantenemos todo vacío para que no explote
+        setData({ upcoming: [], recent: [], scorers: [] });
       } finally {
         setLoading(false);
       }
@@ -43,9 +58,11 @@ function HomePage({ customConfig }) {
   }, []);
 
   const renderWidget = (widget, index) => {
-    if (!widget.isVisible) return null;
+    if (!widget || !widget.isVisible) return null;
+    
     const title = <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'10px', marginBottom:'20px'}}>{widget.title}</h2>;
 
+    // Pasamos "data.upcoming || []" para asegurar que NUNCA sea null/undefined
     switch (widget.type) {
       case 'banner':
         return (
@@ -59,15 +76,26 @@ function HomePage({ customConfig }) {
             </div>
           </div>
         );
-      case 'upcoming': return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<UpcomingMatchesWidget matches={data.upcoming} /></div>;
-      case 'recent': return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<RecentMatchesWidget matches={data.recent} /></div>;
-      case 'scorers': return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<TopScorersWidget scorers={data.scorers} /></div>;
-      case 'text': return <div key={index} className="main-container" style={{marginBottom:'40px'}}><div className="news-card"><h3>{widget.title}</h3><p style={{whiteSpace:'pre-wrap'}}>{widget.content}</p></div></div>;
-      default: return null;
+      case 'upcoming': 
+        return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<UpcomingMatchesWidget matches={data.upcoming || []} /></div>;
+      case 'recent': 
+        return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<RecentMatchesWidget matches={data.recent || []} /></div>;
+      case 'scorers': 
+        return <div key={index} className="main-container" style={{marginBottom:'40px'}}>{title}<TopScorersWidget scorers={data.scorers || []} /></div>;
+      case 'text': 
+        return <div key={index} className="main-container" style={{marginBottom:'40px'}}><div className="news-card"><h3>{widget.title}</h3><p style={{whiteSpace:'pre-wrap'}}>{widget.content}</p></div></div>;
+      default: 
+        return null;
     }
   };
 
-  if (loading) return <div style={{padding:'50px', textAlign:'center'}}>Cargando datos...</div>;
+  if (loading) {
+    return (
+      <div style={{height: '100vh', display:'flex', justifyContent:'center', alignItems:'center', color:'white'}}>
+        Cargando EvoPlay...
+      </div>
+    );
+  }
 
   return (
     <div>
