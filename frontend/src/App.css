@@ -1,14 +1,19 @@
-/* FUENTES: Oswald (Deportiva/Títulos) y Montserrat (Cuerpo/Lujo) */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Oswald:wght@400;600;700&display=swap');
+/* --- FUENTES PREMIUM --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Oswald:wght@400;600;700&display=swap');
 
 :root {
-  --bg-dark: #0e0e0e;
-  --card-dark: #1a1a1a;
-  --gold: #c5a059;        /* Dorado sobrio */
-  --gold-light: #e6c88b;
-  --text-white: #ffffff;
-  --text-gray: #b0b0b0;
-  --accent-green: #2e7d32; /* Verde cancha elegante */
+  --bg-dark: #0e0e0e;        /* Fondo principal (Casi negro) */
+  --card-dark: #1e1e1e;      /* Fondo de tarjetas (Gris oscuro) */
+  --input-bg: #2d2d2d;       /* Fondo de inputs */
+  --gold: #c5a059;           /* Dorado elegante */
+  --gold-hover: #e6c88b;
+  --text-white: #ffffff;     /* Texto principal */
+  --text-gray: #cccccc;      /* Texto secundario (más claro para que se lea) */
+  --border-color: #333333;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -17,27 +22,54 @@ body {
   font-family: 'Montserrat', sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-white);
-  overflow-x: hidden;
+  line-height: 1.6;
 }
 
-/* --- TIPOGRAFÍA --- */
+/* --- TIPOGRAFÍA DE ALTO CONTRASTE --- */
 h1, h2, h3, .nav-logo {
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
   letter-spacing: 1px;
+  color: var(--text-white); /* Aseguramos blanco */
 }
 
-h1 { font-size: 3rem; margin-bottom: 10px; }
-h2 { color: var(--gold); border-left: 4px solid var(--gold); padding-left: 15px; }
+h1 { 
+  font-size: 3rem; 
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8); /* Sombra para leerse sobre cualquier fondo */
+}
 
-/* --- NAVBAR FLOTANTE --- */
+h2 { 
+  color: var(--gold); 
+  border-left: 4px solid var(--gold); 
+  padding-left: 15px; 
+}
+
+p, span, div {
+  color: var(--text-white);
+}
+
+small {
+  color: var(--text-gray);
+}
+
+a {
+  text-decoration: none;
+  color: var(--text-white);
+  transition: 0.3s;
+}
+
+a:hover {
+  color: var(--gold);
+}
+
+/* --- NAVBAR --- */
 nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 5%;
   background: rgba(14, 14, 14, 0.95);
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -52,20 +84,11 @@ nav {
 
 .nav-links { display: flex; gap: 25px; }
 
-.nav-item {
-  color: var(--text-white);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: 0.3s;
-}
-
-.nav-item:hover { color: var(--gold); }
-
-/* --- HERO SECTION (BANNER GIGANTE) --- */
+/* --- HERO SECTION (BANNER) --- */
 .hero-section {
-  height: 70vh; /* Ocupa el 70% de la pantalla */
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3), #0e0e0e), 
+  height: 60vh;
+  /* Capa oscura encima de la imagen para que las letras resalten */
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), #0e0e0e), 
               url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831&auto=format&fit=crop');
   background-size: cover;
   background-position: center;
@@ -77,102 +100,122 @@ nav {
   margin-bottom: 40px;
 }
 
-.hero-content h1 {
-  font-size: 4.5rem;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.8);
-  margin: 0;
+/* --- FORMULARIOS, INPUTS Y SELECTS (Corrección de Visibilidad) --- */
+input, select, textarea {
+  background-color: var(--input-bg) !important; /* Gris oscuro */
+  color: #ffffff !important; /* Letras blancas */
+  border: 1px solid #555 !important;
+  padding: 12px;
+  border-radius: 6px;
+  width: 100%;
+  font-family: 'Montserrat', sans-serif;
+  outline: none;
+  font-size: 1rem;
 }
 
-.hero-content p {
-  font-size: 1.2rem;
-  color: var(--gold-light);
-  letter-spacing: 3px;
-  text-transform: uppercase;
+input::placeholder {
+  color: #888;
 }
 
-/* --- LAYOUT DE CONTENIDO --- */
-.main-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px 60px;
+input:focus, select:focus {
+  border-color: var(--gold) !important;
+  background-color: #333 !important;
 }
 
-/* --- WIDGETS Y TARJETAS --- */
+/* Corrección para el texto dentro de los selects (opciones) */
+option {
+  background-color: var(--bg-dark);
+  color: white;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--gold); /* Etiquetas doradas para resaltar */
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* --- TARJETAS Y WIDGETS --- */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 30px;
+  padding: 0 20px 40px;
 }
 
-.widget {
-  background: var(--card-dark);
-  border-top: 3px solid var(--gold);
-  padding: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+.widget, .match-card, form {
+  background-color: var(--card-dark); /* Fondo gris oscuro solido */
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.widget h3 { margin-top: 0; color: var(--text-white); }
+/* Asegurar que el texto dentro de las tarjetas sea blanco */
+.widget h3, .match-card strong, form h2 {
+  color: var(--text-white);
+}
 
 .widget-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: 1px solid var(--border-color);
   padding: 12px 0;
-  border-bottom: 1px solid #333;
 }
 
-.scorer-item { font-weight: bold; }
-.scorer-item strong { color: var(--gold); }
-
-/* --- BOTONES PREMIUM --- */
+/* --- BOTONES --- */
 button, .cta-button {
   background: var(--gold);
-  color: #000;
+  color: #000; /* Letras negras para contraste con dorado */
   border: none;
-  padding: 10px 25px;
+  padding: 10px 20px;
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
   transition: 0.3s;
-  clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%, 0 100%); /* Corte deportivo */
+  border-radius: 4px;
 }
 
 button:hover {
-  background: #fff;
-  transform: skew(-10deg);
+  background: var(--text-white);
+  transform: translateY(-2px);
 }
 
-/* --- TABLAS ESTILO CHAMPIONS --- */
+/* Botones de acción específicos */
+.delete-btn { background-color: #ff4d4d; color: white; }
+.edit-btn { background-color: var(--gold); color: black; }
+
+/* --- TABLAS --- */
 .standings-table {
   width: 100%;
   border-collapse: collapse;
   background: var(--card-dark);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  margin-top: 20px;
 }
 
 .standings-table th {
-  background: #222;
+  background: #000;
   color: var(--gold);
-  text-align: center;
   padding: 15px;
   text-transform: uppercase;
+  font-size: 0.85rem;
 }
 
 .standings-table td {
-  padding: 12px;
-  text-align: center;
-  border-bottom: 1px solid #333;
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-white);
 }
 
-.standings-table tr:nth-child(even) { background-color: #1f1f1f; }
-.standings-table tr:hover { background-color: #333; }
+.standings-table tr:hover {
+  background-color: #2a2a2a;
+}
 
 /* --- FOOTER --- */
 .luxury-footer {
-  background: #050505;
-  border-top: 1px solid #222;
+  background: #000;
+  border-top: 1px solid var(--border-color);
   padding: 50px 20px;
   text-align: center;
-  color: #555;
+  color: #666;
 }
