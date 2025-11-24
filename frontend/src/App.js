@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './App.css';
 import api from './api';
 
+// Importación de páginas
 import HomePage from './pages/HomePage';
 import TeamsPage from './pages/TeamsPage';
 import MatchesPage from './pages/MatchesPage';
@@ -14,9 +15,8 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  
-  // Valores por defecto para que NUNCA esté vacío
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Configuración inicial segura
   const [config, setConfig] = useState({
     colores: { primary: '#c5a059', secondary: '#0e0e0e' },
     header: { titulo: 'EVOPLAY', subtitulo: 'LEAGUE' },
@@ -24,25 +24,33 @@ function App() {
     pages: { home: [] },
     footer: { texto: 'Cargando...', contacto: '' }
   });
-  
+
   const navigate = useNavigate();
 
+  // Verificar sesión al inicio
   useEffect(() => {
-    const applyTheme = async () => {
+    const token = localStorage.getItem('token');
+    if (token) setIsAuthenticated(true);
+  }, []);
+
+  // Cargar configuración del sitio
+  useEffect(() => {
+    const fetchConfig = async () => {
       try {
         const { data } = await api.get('/api/config');
         if (data) {
           setConfig(data);
+          // Aplicar estilos al documento
           const root = document.documentElement;
-          if (data.colores?.primary) root.style.setProperty('--gold', data.colores.primary);
-          if (data.colores?.secondary) root.style.setProperty('--bg-dark', data.colores.secondary);
-          if (data.style?.fontFamily) document.body.className = data.style.fontFamily;
+          if(data.colores?.primary) root.style.setProperty('--gold', data.colores.primary);
+          if(data.colores?.secondary) root.style.setProperty('--bg-dark', data.colores.secondary);
+          if(data.style?.fontFamily) document.body.className = data.style.fontFamily;
         }
       } catch (error) {
-        console.log("Usando configuración por defecto");
+        console.log("Usando config por defecto");
       }
     };
-    applyTheme();
+    fetchConfig();
   }, []);
 
   const handleLogin = () => setIsAuthenticated(true);
@@ -54,12 +62,12 @@ function App() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', minHeight: '100vh'}}>
-      {/* HEADER */}
+      {/* NAVBAR */}
       <nav>
         <div className="nav-logo">
           {config.header?.titulo || 'EVOPLAY'} 
           <span style={{color:'var(--gold)', fontSize:'0.5em', marginLeft:'5px'}}>
-            {config.header?.subtitulo || 'LEAGUE'}
+            {config.header?.subtitulo}
           </span>
         </div>
         <div className="nav-links">
@@ -82,7 +90,7 @@ function App() {
         </div>
       </nav>
       
-      {/* CONTENIDO (Sin animaciones de opacidad para evitar pantalla negra) */}
+      {/* CONTENIDO */}
       <div style={{flex: 1}}>
         <Routes>
           <Route path="/" element={<HomePage customConfig={config} />} />
