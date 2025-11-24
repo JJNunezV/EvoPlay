@@ -4,10 +4,16 @@ import UpcomingMatchesWidget from '../components/UpcomingMatchesWidget';
 import TopScorersWidget from '../components/TopScorersWidget';
 import RecentMatchesWidget from '../components/RecentMatchesWidget';
 
-function HomePage() {
+// Recibimos 'customConfig' como propiedad desde App.js
+function HomePage({ customConfig }) {
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [recentMatches, setRecentMatches] = useState([]);
   const [topScorers, setTopScorers] = useState([]);
+
+  // Valores dinámicos (Si no hay config, usa los textos por defecto)
+  const heroTitle = customConfig?.hero?.titulo || 'EVOPLAY LEAGUE';
+  const heroSubtitle = customConfig?.hero?.subtitulo || 'TORNEO CLAUSURA 2025';
+  const bgImage = customConfig?.hero?.imagenFondo || 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831';
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -30,11 +36,14 @@ function HomePage() {
 
   return (
     <div>
-      {/* --- HERO BANNER (El Estadio Gigante) --- */}
-      <div className="hero-section">
+      {/* --- HERO BANNER DINÁMICO --- */}
+      {/* Usamos style en línea para poder inyectar la imagen de la base de datos */}
+      <div className="hero-section" style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg-dark)), url('${bgImage}')`
+      }}>
         <div className="hero-content">
-          <p>TORNEO CLAUSURA 2025</p>
-          <h1>EVOPLAY LEAGUE</h1>
+          <p>{heroSubtitle}</p>
+          <h1>{heroTitle}</h1>
           <button style={{marginTop: '20px', fontSize: '1.2rem', padding: '15px 40px'}}>
             VER RESULTADOS
           </button>
@@ -62,7 +71,7 @@ function HomePage() {
             <h2>🏆 Pichichi / Goleadores</h2>
             <TopScorersWidget scorers={topScorers} />
             
-            {/* Widget Extra de publicidad o aviso */}
+            {/* Widget Extra */}
             <div className="widget" style={{marginTop: '30px', background: 'linear-gradient(45deg, #1a1a1a, #2a2a2a)'}}>
                 <h3 style={{color: 'white'}}>INSCRIPCIONES ABIERTAS</h3>
                 <p style={{color: '#aaa', fontSize: '0.9rem'}}>Registra a tu equipo para la próxima temporada. Cupos limitados.</p>

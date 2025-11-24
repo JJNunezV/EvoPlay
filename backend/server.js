@@ -7,6 +7,7 @@ require('dotenv').config();
 const equipoRoutes = require('./routes/equipoRoutes');
 const partidoRoutes = require('./routes/partidoRoutes');
 const authRoutes = require('./routes/authRoutes');
+const configRoutes = require('./routes/configRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/equipos', equipoRoutes);
 app.use('/api/partidos', partidoRoutes);
+app.use('/api/config', configRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor BACKEND corriendo en http://localhost:${PORT}`);
