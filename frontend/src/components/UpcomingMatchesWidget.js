@@ -9,17 +9,21 @@ function UpcomingMatchesWidget({ matches }) {
     );
   }
 
-  // 👇 ESTA ES LA FUNCIÓN CORREGIDA
+  // Función para formatear la fecha bonita (ej: SÁBADO 24 NOV - 8:00 PM)
   const formatearFechaCompleta = (fechaString) => {
     const fecha = new Date(fechaString);
-    // Usamos toLocaleString que sí existe y funciona perfecto
-    return fecha.toLocaleString('es-ES', { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'short', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }).toUpperCase();
+    // Intentamos usar Intl.DateTimeFormat si está disponible, sino fallback simple
+    try {
+        return new Intl.DateTimeFormat('es-ES', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+        }).format(fecha).toUpperCase();
+    } catch (e) {
+        return fecha.toLocaleDateString();
+    }
   };
 
   return (

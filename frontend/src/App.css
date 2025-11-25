@@ -350,3 +350,154 @@ a:hover { color: var(--gold); }
 .pro-table tr:hover { background: #222; }
 .team-name-cell { text-align: left !important; display: flex; align-items: center; gap: 10px; font-weight: bold; }
 .team-logo-mini { width: 30px; height: 30px; object-fit: contain; }
+
+/* --- AÑADIR AL FINAL DE APP.CSS --- */
+
+/* === ESTILOS PARA TABLAS PREMIUM (Goleadores y Posiciones) === */
+.luxury-table-container {
+  background: var(--panel-bg);
+  border-radius: 12px;
+  overflow: hidden; /* Para que las esquinas redondeadas apliquen a la tabla */
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+}
+
+.luxury-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.luxury-table thead th {
+  background: rgba(0,0,0,0.4);
+  color: var(--gold);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 15px;
+  border-bottom: 2px solid var(--border);
+}
+
+.luxury-table tbody td {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  vertical-align: middle;
+}
+
+.luxury-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.luxury-table tbody tr:hover {
+  background: rgba(197, 160, 89, 0.05); /* Un toque dorado al pasar el mouse */
+}
+
+/* Celdas específicas */
+.rank-cell {
+  font-weight: bold;
+  color: var(--gold);
+  text-align: center;
+  width: 50px;
+  font-size: 1.1rem;
+}
+
+.player-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.team-logo-small {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.goals-cell {
+  font-weight: 800;
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--text-white);
+}
+
+
+/* === ESTILOS PARA TARJETAS DE PARTIDO TIPO "BANNER TV" === */
+.match-banner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Se adapta a pantallas */
+  gap: 20px;
+}
+
+.match-banner {
+  background: linear-gradient(145deg, var(--panel-bg), rgba(20, 20, 25, 1));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.match-banner:hover {
+  transform: translateY(-5px);
+  border-color: var(--gold);
+  box-shadow: 0 10px 25px -5px rgba(197, 160, 89, 0.3);
+}
+
+/* Cabecera de la tarjeta (Fecha) */
+.match-date-badge {
+  background: var(--gold);
+  color: #000;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  padding: 8px 15px;
+  text-align: center;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* Cuerpo del enfrentamiento */
+.match-versus-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 20px;
+}
+
+.team-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.team-block.local { text-align: right; align-items: flex-end; }
+.team-block.visitante { text-align: left; align-items: flex-start; }
+
+.team-logo-large {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.team-name-banner {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.versus-separator {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--gold);
+  opacity: 0.8;
+  padding: 0 15px;
+}
