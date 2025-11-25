@@ -19,13 +19,13 @@ const partidoSchema = new Schema({
     esAutogol: { type: Boolean, default: false }
   }],
 
-  // 👇 NUEVO: Historial de Tarjetas
   detallesTarjetas: [{
     jugadorId: String,
     nombreJugador: String,
     tipo: { type: String, enum: ['Amarilla', 'Roja'] },
     minuto: Number,
-    equipo: String // 'local' o 'visitante'
+    equipo: String,
+    motivo: { type: String, default: '' } // 👈 NUEVO CAMPO
   }]
 
 }, { timestamps: true });
