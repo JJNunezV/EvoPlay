@@ -1,224 +1,128 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import { Link } from 'react-router-dom';
 
-function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
-  const [teams, setTeams] = useState([]);
-  const [localId, setLocalId] = useState('');
-  const [visitanteId, setVisitanteId] = useState('');
-  const [fecha, setFecha] = useState('');
-  const [esProgramado, setEsProgramado] = useState(true);
-
-  const [scoreLocal, setScoreLocal] = useState(0);
-  const [scoreVisitante, setScoreVisitante] = useState(0);
-  const [eventosGol, setEventosGol] = useState([]);
-  const [eventosTarjeta, setEventosTarjeta] = useState([]);
-
-  // Inputs temporales para Goles (con Asistencia y Minuto)
-  const [golTemp, setGolTemp] = useState({ 
-    jugadorId: '', 
-    asistenciaId: '', 
-    minuto: '', 
-    esAutogol: false 
-  });
-  
-  // Inputs temporales para Tarjetas
-  const [tarjetaTemp, setTarjetaTemp] = useState({ 
-    jugadorId: '', 
-    tipo: 'Amarilla', 
-    minuto: '', 
-    motivo: '' 
-  });
+function StandingsPage() {
+  const [standings, setStandings] = useState([]);
+  const [fairPlay, setFairPlay] = useState([]);
+  const [sanciones, setSanciones] = useState([]);
 
   useEffect(() => {
-    const fetchTeams = async () => {
-      try { const res = await api.get('/api/equipos'); setTeams(res.data); } catch (e) {}
-    };
-    fetchTeams();
-    if (matchToPlay) {
-      setLocalId(matchToPlay.equipoLocal._id || matchToPlay.equipoLocal);
-      setVisitanteId(matchToPlay.equipoVisitante._id || matchToPlay.equipoVisitante);
-      setFecha(new Date(matchToPlay.fecha).toISOString().split('T')[0]);
-      setEsProgramado(false);
-    }
-  }, [matchToPlay]);
-
-  const teamLocalObj = teams.find(t => t._id === localId);
-  const teamVisitanteObj = teams.find(t => t._id === visitanteId);
-
-  // --- AGREGAR GOL ---
-  const agregarEventoGol = (esLocal) => {
-    if (!golTemp.jugadorId || !golTemp.minuto) return alert("Falta jugador o minuto");
-    
-    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
-    const jug = eq.jugadores.find(j => j._id === golTemp.jugadorId);
-    const asist = golTemp.asistenciaId ? eq.jugadores.find(j => j._id === golTemp.asistenciaId) : null;
-    
-    // Lógica de marcador (Autogol cuenta al rival)
-    if (esLocal) { 
-        golTemp.esAutogol ? setScoreVisitante(s=>s+1) : setScoreLocal(s=>s+1); 
-    } else { 
-        golTemp.esAutogol ? setScoreLocal(s=>s+1) : setScoreVisitante(s=>s+1); 
-    }
-
-    setEventosGol([...eventosGol, { 
-        ...golTemp, 
-        nombreJugador: jug.nombre, 
-        nombreAsistente: asist ? asist.nombre : null,
-        equipo: esLocal ? 'local' : 'visitante' 
-    }]);
-    
-    // Resetear inputs
-    setGolTemp({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
-  };
-
-  // --- AGREGAR TARJETA ---
-  const agregarTarjeta = (esLocal) => {
-    if (!tarjetaTemp.jugadorId) return alert("Elige jugador sancionado");
-    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
-    const jug = eq.jugadores.find(j => j._id === tarjetaTemp.jugadorId);
-
-    setEventosTarjeta([...eventosTarjeta, { 
-      ...tarjetaTemp, 
-      nombreJugador: jug.nombre, 
-      equipo: esLocal ? 'local' : 'visitante',
-      motivo: tarjetaTemp.motivo || 'Sin especificar'
-    }]);
-    setTarjetaTemp({ jugadorId: '', tipo: 'Amarilla', minuto: '', motivo: '' });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const payload = {
-      equipoLocal: localId, equipoVisitante: visitanteId, fecha, finalizado: !esProgramado,
-      golesLocal: esProgramado ? 0 : scoreLocal,
-      golesVisitante: esProgramado ? 0 : scoreVisitante,
-      detallesGoles: esProgramado ? [] : eventosGol,
-      detallesTarjetas: esProgramado ? [] : eventosTarjeta
-    };
-    try {
-      if (matchToPlay) await api.put(`/api/partidos/${matchToPlay._id}`, payload);
-      else await api.post('/api/partidos', payload);
-      alert('¡Guardado con éxito!');
-      onMatchCreated();
-      if(onCancel) onCancel();
-      if(!matchToPlay) { setLocalId(''); setVisitanteId(''); setFecha(''); setEventosGol([]); setEventosTarjeta([]); }
-    } catch (e) { alert('Error al guardar'); }
-  };
-
-  // Renderizador de controles por equipo
-  const renderInputZone = (esLocal) => {
-    const equipo = esLocal ? teamLocalObj : teamVisitanteObj;
-    if (!equipo) return null;
-    
-    // Filtrar jugadores para asistencia (no puede asistirse a sí mismo)
-    const posiblesAsistentes = equipo.jugadores.filter(j => j._id !== golTemp.jugadorId);
-
-    return (
-      <div style={{marginBottom:'15px', padding:'15px', background: esLocal?'#1e293b':'#3f1a1a', borderRadius:'8px', border: `1px solid ${esLocal?'#3b82f6':'#ef4444'}`}}>
-        <h4 style={{margin:'0 0 10px 0', color: esLocal?'#60a5fa':'#fca5a5'}}>{equipo.nombre}</h4>
+    const fetchData = async () => {
+      try {
+        // Pedimos las 3 tablas al mismo tiempo
+        const [resStandings, resFairPlay, resSanciones] = await Promise.all([
+          api.get('/api/partidos/standings'),
+          api.get('/api/partidos/cards'),
+          api.get('/api/partidos/sanciones')
+        ]);
         
-        {/* --- SECCIÓN DE GOLES (Recuperada y mejorada) --- */}
-        <div style={{marginBottom:'20px', paddingBottom:'10px', borderBottom:'1px solid #555'}}>
-          
-          {/* Fila 1: Goleador + Minuto + Autogol */}
-          <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
-            <select style={{flex:2}} value={golTemp.jugadorId} onChange={e=>setGolTemp({...golTemp, jugadorId:e.target.value, asistenciaId:''})}>
-              <option value="">-- Goleador --</option>
-              {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
-            </select>
-            <input type="number" placeholder="Min" style={{width:'50px'}} value={golTemp.minuto} onChange={e=>setGolTemp({...golTemp, minuto:e.target.value})} />
-          </div>
-
-          {/* Fila 2: Asistencia (Solo si no es autogol) */}
-          {!golTemp.esAutogol && (
-             <div style={{marginBottom:'5px'}}>
-                <select style={{width:'100%'}} value={golTemp.asistenciaId} onChange={e=>setGolTemp({...golTemp, asistenciaId:e.target.value})}>
-                  <option value="">-- Asistencia (Opcional) --</option>
-                  {posiblesAsistentes.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
-                </select>
-             </div>
-          )}
-
-          {/* Fila 3: Checkbox Autogol y Botón */}
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-             <label style={{color:'#ccc', fontSize:'0.8rem', display:'flex', alignItems:'center', cursor:'pointer'}}>
-                <input type="checkbox" checked={golTemp.esAutogol} onChange={e=>setGolTemp({...golTemp, esAutogol:e.target.checked})} style={{width:'auto', marginRight:'5px'}}/> 
-                Es Autogol
-             </label>
-             <button type="button" onClick={()=>agregarEventoGol(esLocal)} style={{background:'#22c55e', border:'none', color:'white', borderRadius:'4px', padding:'5px 15px', cursor:'pointer'}}>+ GOL</button>
-          </div>
-        </div>
-
-        {/* --- SECCIÓN DE TARJETAS --- */}
-        <div>
-           <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
-             <select style={{flex:2}} value={tarjetaTemp.jugadorId} onChange={e=>setTarjetaTemp({...tarjetaTemp, jugadorId:e.target.value})}>
-                <option value="">-- Sancionado --</option>
-                {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
-              </select>
-              <select style={{width:'80px'}} value={tarjetaTemp.tipo} onChange={e=>setTarjetaTemp({...tarjetaTemp, tipo:e.target.value})}>
-                <option value="Amarilla">🟨</option>
-                <option value="Roja">🟥</option>
-              </select>
-           </div>
-           <div style={{display:'flex', gap:'5px'}}>
-             <input type="text" placeholder="Motivo (ej: Mano)" value={tarjetaTemp.motivo} onChange={e=>setTarjetaTemp({...tarjetaTemp, motivo:e.target.value})} style={{flex:1}} />
-             <button type="button" onClick={()=>agregarTarjeta(esLocal)} style={{background:'#eab308', border:'none', color:'black', borderRadius:'4px', padding:'5px 10px', cursor:'pointer'}}>Aplicar</button>
-           </div>
-        </div>
-      </div>
-    );
-  };
+        setStandings(resStandings.data);
+        setFairPlay(resFairPlay.data);
+        setSanciones(resSanciones.data);
+      } catch (error) {
+        console.error("Error cargando tablas", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit} style={{border: '2px solid #333', padding: '20px', borderRadius: '8px', background:'#121212'}}>
-      <h2 style={{marginTop:0, color: '#fff'}}>{matchToPlay ? '⚽ Jugar' : '📅 Programar'}</h2>
-      
-      <div style={{marginBottom: '20px', display: 'flex', gap: '20px'}}>
-        <label style={{color:'white'}}><input type="radio" checked={esProgramado} onChange={() => setEsProgramado(true)} disabled={!!matchToPlay} /> Programar</label>
-        <label style={{color:'white'}}><input type="radio" checked={!esProgramado} onChange={() => setEsProgramado(false)} /> Jugar</label>
+    <div style={{paddingBottom: '50px'}}>
+      <h1 style={{textAlign:'center', marginBottom:'40px'}}>Estadísticas del Torneo</h1>
+
+      {/* --- 1. TABLA GENERAL --- */}
+      <div className="table-container" style={{marginBottom: '50px'}}>
+        <div style={{padding:'15px', background:'#1a1a1a', borderBottom:'2px solid var(--gold)'}}>
+          <h2 style={{margin:0, fontSize:'1.5rem', color:'white'}}>🏆 Tabla General</h2>
+        </div>
+        <table className="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th style={{textAlign:'left'}}>Club</th>
+              <th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>PTS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((team, i) => (
+              <tr key={i}>
+                <td>{i+1}</td>
+                <td style={{textAlign:'left', display:'flex', alignItems:'center', gap:'10px'}}>
+                  {team.logoUrl && <img src={team.logoUrl} alt="logo" width="30" height="30" style={{objectFit:'contain'}} />}
+                  <Link to={`/equipos/${team._id}`} style={{color:'white', fontWeight:'bold'}}>{team.nombre}</Link>
+                </td>
+                <td>{team.PJ}</td><td>{team.PG}</td><td>{team.PE}</td><td>{team.PP}</td>
+                <td>{team.GF}</td><td>{team.GC}</td>
+                <td style={{color:'var(--gold)', fontWeight:'bold', fontSize:'1.2rem'}}>{team.PTS}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <div style={{display: 'flex', gap: '10px', marginBottom:'20px'}}>
-        <select value={localId} onChange={e=>{setLocalId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Local</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
-        <select value={visitanteId} onChange={e=>{setVisitanteId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Visitante</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:'30px'}}>
+        
+        {/* --- 2. TRIBUNAL DISCIPLINARIO (Sanciones) --- */}
+        <div className="table-container" style={{border:'1px solid #ef4444'}}>
+          <div style={{padding:'15px', background:'#3f1a1a', borderBottom:'2px solid #ef4444'}}>
+            <h2 style={{margin:0, fontSize:'1.3rem', color:'#fca5a5'}}>⚖️ Tribunal Disciplinario</h2>
+          </div>
+          <table className="standings-table">
+            <thead>
+              <tr><th style={{textAlign:'left'}}>Jugador</th><th>Sanción</th><th>Motivo</th></tr>
+            </thead>
+            <tbody>
+              {sanciones.length === 0 && <tr><td colSpan="3" style={{padding:'20px', color:'#888'}}>Juego limpio, sin sanciones recientes.</td></tr>}
+              {sanciones.map((s, i) => (
+                <tr key={i}>
+                  <td style={{textAlign:'left'}}>
+                    <div style={{fontWeight:'bold'}}>{s.jugador}</div>
+                    <div style={{fontSize:'0.8rem', color:'#888'}}>{s.equipo}</div>
+                  </td>
+                  <td>
+                    <span style={{
+                      background: s.tipo === 'Amarilla' ? '#facc15' : '#ef4444',
+                      color: 'black', padding:'4px 8px', borderRadius:'4px', fontWeight:'bold', fontSize:'0.8rem'
+                    }}>
+                      {s.tipo === 'Amarilla' ? 'AMARILLA' : 'ROJA'}
+                    </span>
+                  </td>
+                  <td style={{fontStyle:'italic', color:'#ccc'}}>{s.motivo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* --- 3. FAIR PLAY (Puntos por Equipo) --- */}
+        <div className="table-container" style={{border:'1px solid #facc15'}}>
+          <div style={{padding:'15px', background:'#222', borderBottom:'2px solid #facc15'}}>
+            <h2 style={{margin:0, fontSize:'1.3rem', color:'#facc15'}}>🤝 Fair Play</h2>
+          </div>
+          <table className="standings-table">
+            <thead>
+              <tr><th style={{textAlign:'left'}}>Club</th><th>🟨</th><th>🟥</th><th>Pts Negativos</th></tr>
+            </thead>
+            <tbody>
+              {fairPlay.map((team, i) => (
+                <tr key={i}>
+                  <td style={{textAlign:'left', display:'flex', alignItems:'center', gap:'10px'}}>
+                    {team.logoUrl && <img src={team.logoUrl} width="25" alt="" />}
+                    {team.nombre}
+                  </td>
+                  <td style={{color:'#facc15', fontWeight:'bold'}}>{team.amarillas}</td>
+                  <td style={{color:'#ef4444', fontWeight:'bold'}}>{team.rojas}</td>
+                  <td style={{fontWeight:'bold'}}>{team.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
       </div>
-
-      {!esProgramado && localId && visitanteId && (
-        <>
-          <div style={{textAlign:'center', fontSize:'3rem', fontWeight:'bold', color:'white'}}>{scoreLocal} - {scoreVisitante}</div>
-          <div style={{display:'flex', gap:'20px'}}>{renderInputZone(true)}{renderInputZone(false)}</div>
-          
-          {/* RESUMEN DE EVENTOS */}
-          {(eventosTarjeta.length > 0 || eventosGol.length > 0) && (
-            <div style={{background:'#222', padding:'10px', marginTop:'10px', borderRadius:'5px'}}>
-              <h4 style={{color:'white', marginTop:0}}>Resumen del Partido:</h4>
-              
-              {/* Goles */}
-              {eventosGol.map((ev, i) => (
-                <div key={i} style={{color:'white', fontSize:'0.9rem', borderBottom:'1px solid #333', padding:'3px', display:'flex', justifyContent:'space-between'}}>
-                   <span>
-                     ⚽ <strong>{ev.minuto}'</strong> {ev.nombreJugador} ({ev.equipo})
-                     {ev.esAutogol && <span style={{color:'red', marginLeft:'5px'}}>(AUTOGOL)</span>}
-                     {ev.nombreAsistente && <span style={{color:'#aaa', marginLeft:'5px'}}>(Asist: {ev.nombreAsistente})</span>}
-                   </span>
-                </div>
-              ))}
-
-              {/* Tarjetas */}
-              {eventosTarjeta.map((t,i) => (
-                <div key={i} style={{color:'#ccc', fontSize:'0.9rem', borderBottom:'1px solid #333', padding:'3px'}}>
-                  {t.tipo === 'Amarilla' ? '🟨' : '🟥'} <strong>{t.nombreJugador}</strong> ({t.equipo}): <span style={{fontStyle:'italic'}}>{t.motivo}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required style={{marginTop:'20px', display:'block', width:'100%'}} />
-      <button type="submit" style={{marginTop:'10px', width:'100%', padding:'15px', background:'var(--gold)', border:'none', fontWeight:'bold'}}>GUARDAR</button>
-    </form>
+    </div>
   );
 }
-export default CreateMatchForm;
+
+export default StandingsPage;
