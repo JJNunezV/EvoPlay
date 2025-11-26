@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://evoplay-production.up.railway.app',
+  baseURL: 'https://evoplay-vamb.onrender.com',
 });
 
 api.interceptors.request.use(config => {
