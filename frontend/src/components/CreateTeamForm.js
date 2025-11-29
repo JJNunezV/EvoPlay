@@ -1,60 +1,151 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-function CreateTeamForm({ onTeamCreated }) {
-  const [formData, setFormData] = useState({ nombre: '', logoUrl: '', categoria: 'Fútbol 7', jugadores: [] });
+function CreateMatchForm({ onMatchCreated, matchToPlay, onCancel }) {
+  const [teams, setTeams] = useState([]);
+  const [localId, setLocalId] = useState('');
+  const [visitanteId, setVisitanteId] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [esProgramado, setEsProgramado] = useState(true);
 
-  const addPlayer = () => setFormData({...formData, jugadores: [...formData.jugadores, { nombre: '', posicion: 'Medio', rol: 'Titular' }] });
+  const [scoreLocal, setScoreLocal] = useState(0);
+  const [scoreVisitante, setScoreVisitante] = useState(0);
+  const [eventosGol, setEventosGol] = useState([]);
+  const [eventosTarjeta, setEventosTarjeta] = useState([]); // <-- NUEVO
 
-  const updatePlayer = (idx, field, val) => {
-    const newP = [...formData.jugadores];
-    newP[idx][field] = val;
-    setFormData({...formData, jugadores: newP});
+  // Inputs temporales
+  const [golTemp, setGolTemp] = useState({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
+  const [tarjetaTemp, setTarjetaTemp] = useState({ jugadorId: '', tipo: 'Amarilla', minuto: '' }); // <-- NUEVO
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try { const res = await api.get('/api/equipos'); setTeams(res.data); } catch (e) {}
+    };
+    fetchTeams();
+    if (matchToPlay) {
+      setLocalId(matchToPlay.equipoLocal._id || matchToPlay.equipoLocal);
+      setVisitanteId(matchToPlay.equipoVisitante._id || matchToPlay.equipoVisitante);
+      setFecha(new Date(matchToPlay.fecha).toISOString().split('T')[0]);
+      setEsProgramado(false);
+    }
+  }, [matchToPlay]);
+
+  const teamLocalObj = teams.find(t => t._id === localId);
+  const teamVisitanteObj = teams.find(t => t._id === visitanteId);
+
+  // --- AGREGAR GOL ---
+  const agregarEventoGol = (esLocal) => {
+    if (!golTemp.jugadorId) return alert("Elige jugador");
+    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
+    const jug = eq.jugadores.find(j => j._id === golTemp.jugadorId);
+    
+    if (esLocal) { golTemp.esAutogol ? setScoreVisitante(s=>s+1) : setScoreLocal(s=>s+1); }
+    else { golTemp.esAutogol ? setScoreLocal(s=>s+1) : setScoreVisitante(s=>s+1); }
+
+    setEventosGol([...eventosGol, { ...golTemp, nombreJugador: jug.nombre, equipo: esLocal?'local':'visitante' }]);
+    setGolTemp({ jugadorId: '', asistenciaId: '', minuto: '', esAutogol: false });
   };
 
-  const removePlayer = (idx) => {
-    const newP = formData.jugadores.filter((_, i) => i !== idx);
-    setFormData({...formData, jugadores: newP});
+  // --- AGREGAR TARJETA ---
+  const agregarTarjeta = (esLocal) => {
+    if (!tarjetaTemp.jugadorId) return alert("Elige jugador");
+    const eq = esLocal ? teamLocalObj : teamVisitanteObj;
+    const jug = eq.jugadores.find(j => j._id === tarjetaTemp.jugadorId);
+
+    setEventosTarjeta([...eventosTarjeta, { ...tarjetaTemp, nombreJugador: jug.nombre, equipo: esLocal?'local':'visitante' }]);
+    setTarjetaTemp({ jugadorId: '', tipo: 'Amarilla', minuto: '' });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+      equipoLocal: localId, equipoVisitante: visitanteId, fecha, finalizado: !esProgramado,
+      golesLocal: esProgramado ? 0 : scoreLocal,
+      golesVisitante: esProgramado ? 0 : scoreVisitante,
+      detallesGoles: esProgramado ? [] : eventosGol,
+      detallesTarjetas: esProgramado ? [] : eventosTarjeta // <-- ENVIAMOS TARJETAS
+    };
     try {
-      await api.post('/api/equipos', formData);
-      alert('¡Equipo creado!');
-      setFormData({ nombre: '', logoUrl: '', categoria: 'Fútbol 7', jugadores: [] });
-      onTeamCreated();
-    } catch (e) { alert('Error al crear'); }
+      if (matchToPlay) await api.put(`/api/partidos/${matchToPlay._id}`, payload);
+      else await api.post('/api/partidos', payload);
+      alert('¡Guardado!');
+      onMatchCreated();
+      if(onCancel) onCancel();
+      if(!matchToPlay) { setLocalId(''); setVisitanteId(''); setFecha(''); setEventosGol([]); setEventosTarjeta([]); }
+    } catch (e) { alert('Error'); }
+  };
+
+  // Renderizador de controles por equipo
+  const renderInputZone = (esLocal) => {
+    const equipo = esLocal ? teamLocalObj : teamVisitanteObj;
+    if (!equipo) return null;
+    return (
+      <div style={{marginBottom:'15px', padding:'15px', background: esLocal?'#1e293b':'#3f1a1a', borderRadius:'8px', border: `1px solid ${esLocal?'#3b82f6':'#ef4444'}`}}>
+        <h4 style={{margin:'0 0 10px 0', color: esLocal?'#60a5fa':'#fca5a5'}}>{equipo.nombre}</h4>
+        
+        {/* GOLES */}
+        <div style={{marginBottom:'15px'}}>
+          <div style={{display:'flex', gap:'5px'}}>
+            <select style={{flex:2}} value={golTemp.jugadorId} onChange={e=>setGolTemp({...golTemp, jugadorId:e.target.value})}>
+              <option value="">-- Goleador --</option>
+              {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+            <button type="button" onClick={()=>agregarEventoGol(esLocal)} style={{background:'#22c55e', border:'none', color:'white', borderRadius:'4px'}}>⚽</button>
+          </div>
+        </div>
+
+        {/* TARJETAS */}
+        <div style={{display:'flex', gap:'5px', borderTop:'1px dashed #555', paddingTop:'10px'}}>
+           <select style={{flex:2}} value={tarjetaTemp.jugadorId} onChange={e=>setTarjetaTemp({...tarjetaTemp, jugadorId:e.target.value})}>
+              <option value="">-- Sancionado --</option>
+              {equipo.jugadores.map(j=><option key={j._id} value={j._id}>{j.nombre}</option>)}
+            </select>
+            <select style={{width:'80px'}} value={tarjetaTemp.tipo} onChange={e=>setTarjetaTemp({...tarjetaTemp, tipo:e.target.value})}>
+              <option value="Amarilla">🟨</option>
+              <option value="Roja">🟥</option>
+            </select>
+            <button type="button" onClick={()=>agregarTarjeta(esLocal)} style={{background:'#eab308', border:'none', color:'black', borderRadius:'4px'}}>Tarjeta</button>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{color:'white'}}>
-      <h2 style={{marginTop:0, color:'#4ade80'}}>➕ Crear Nuevo Equipo</h2>
+    <form onSubmit={handleSubmit} style={{border: '2px solid #333', padding: '20px', borderRadius: '8px', background:'#121212'}}>
+      <h2 style={{marginTop:0, color: '#fff'}}>{matchToPlay ? '⚽ Jugar' : '📅 Programar'}</h2>
       
-      <div style={{marginBottom:'15px'}}>
-        <label style={{display:'block', marginBottom:'5px', color:'#aaa'}}>Categoría:</label>
-        <select value={formData.categoria} onChange={e=>setFormData({...formData, categoria:e.target.value})} style={{width:'100%', padding:'10px', background:'#000', color:'white', border:'1px solid #444'}}>
-            <option>Fútbol 7</option><option>Fútbol 11</option><option>Fútbol Rápido</option><option>Pádel</option><option>Voleibol</option>
-        </select>
+      <div style={{marginBottom: '20px', display: 'flex', gap: '20px'}}>
+        <label style={{color:'white'}}><input type="radio" checked={esProgramado} onChange={() => setEsProgramado(true)} disabled={!!matchToPlay} /> Programar</label>
+        <label style={{color:'white'}}><input type="radio" checked={!esProgramado} onChange={() => setEsProgramado(false)} /> Jugar</label>
       </div>
 
-      <div style={{display:'flex', gap:'10px', marginBottom:'15px'}}>
-        <input type="text" placeholder="Nombre del Equipo" value={formData.nombre} onChange={e=>setFormData({...formData, nombre:e.target.value})} required style={{flex:1, padding:'10px', background:'#222', border:'1px solid #444', color:'white'}} />
-        <input type="text" placeholder="URL Logo" value={formData.logoUrl} onChange={e=>setFormData({...formData, logoUrl:e.target.value})} style={{flex:1, padding:'10px', background:'#222', border:'1px solid #444', color:'white'}} />
+      <div style={{display: 'flex', gap: '10px', marginBottom:'20px'}}>
+        <select value={localId} onChange={e=>{setLocalId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Local</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
+        <select value={visitanteId} onChange={e=>{setVisitanteId(e.target.value); setEventosGol([]); setEventosTarjeta([]);}} disabled={!!matchToPlay} style={{flex:1}}><option value="">Visitante</option>{teams.map(t=><option key={t._id} value={t._id}>{t.nombre}</option>)}</select>
       </div>
 
-      <h4 style={{borderBottom:'1px solid #444', paddingBottom:'5px'}}>Jugadores</h4>
-      {formData.jugadores.map((p, i) => (
-        <div key={i} style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
-           <input type="text" placeholder="Nombre" value={p.nombre} onChange={e=>updatePlayer(i, 'nombre', e.target.value)} style={{flex:2, padding:'5px'}} required/>
-           <select value={p.posicion} onChange={e=>updatePlayer(i, 'posicion', e.target.value)} style={{flex:1}}><option>Portero</option><option>Defensa</option><option>Medio</option><option>Delantero</option></select>
-           <button type="button" onClick={()=>removePlayer(i)} style={{background:'red', color:'white', border:'none'}}>X</button>
-        </div>
-      ))}
-      <button type="button" onClick={addPlayer} style={{marginBottom:'15px', background:'#28a745', border:'none', color:'white', padding:'5px 10px', borderRadius:'4px'}}>+ Jugador</button>
+      {!esProgramado && localId && visitanteId && (
+        <>
+          <div style={{textAlign:'center', fontSize:'3rem', fontWeight:'bold', color:'white'}}>{scoreLocal} - {scoreVisitante}</div>
+          <div style={{display:'flex', gap:'20px'}}>{renderInputZone(true)}{renderInputZone(false)}</div>
+          
+          {/* Resumen de Tarjetas */}
+          {eventosTarjeta.length > 0 && (
+            <div style={{background:'#222', padding:'10px', marginTop:'10px', borderRadius:'5px'}}>
+              <strong style={{color:'white'}}>Tarjetas:</strong>
+              {eventosTarjeta.map((t,i) => (
+                <div key={i} style={{color:'#ccc', fontSize:'0.9rem'}}>
+                  {t.tipo === 'Amarilla' ? '🟨' : '🟥'} {t.nombreJugador} ({t.equipo})
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      <button type="submit" style={{width:'100%', padding:'12px', background:'var(--gold)', border:'none', fontWeight:'bold', cursor:'pointer'}}>CREAR EQUIPO</button>
+      <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} required style={{marginTop:'20px', display:'block', width:'100%'}} />
+      <button type="submit" style={{marginTop:'10px', width:'100%', padding:'15px', background:'var(--gold)', border:'none', fontWeight:'bold'}}>GUARDAR</button>
     </form>
   );
 }
-export default CreateTeamForm;
+export default CreateMatchForm;
