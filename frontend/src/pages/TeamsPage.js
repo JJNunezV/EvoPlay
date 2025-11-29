@@ -5,38 +5,31 @@ import CreateTeamForm from '../components/CreateTeamForm';
 import EditTeamForm from '../components/EditTeamForm';
 
 function TeamsPage() {
-  // 1. Inicializamos siempre como array vacío []
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState([]); // Siempre inicia como array vacío
   const [editingTeam, setEditingTeam] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const fetchTeams = async () => {
     setLoading(true);
     try {
-      // Aseguramos la ruta con /api
       const response = await api.get('/api/equipos');
-      
-      // 2. Verificamos si la respuesta es válida
+      // Doble verificación: ¿Es un array?
       if (Array.isArray(response.data)) {
         setTeams(response.data);
-        setError(null);
       } else {
-        setTeams([]); // Si llega basura, usamos lista vacía
+        console.warn("Respuesta de equipos no válida, usando array vacío.");
+        setTeams([]);
       }
     } catch (err) {
       console.error("Error al obtener los equipos", err);
-      setError("No se pudo conectar con el servidor.");
-      setTeams([]);
+      setTeams([]); // En caso de error, array vacío
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchTeams();
-  }, []);
+  useEffect(() => { fetchTeams(); }, []);
 
   const handleEditClick = (team) => {
     setEditingTeam(team);
@@ -49,26 +42,21 @@ function TeamsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 3. BLINDAJE: Filtramos sobre una lista segura
+  // Filtrado seguro
   const listaSegura = Array.isArray(teams) ? teams : [];
-  
   const equiposFiltrados = filtroCategoria === 'Todos' 
     ? listaSegura 
     : listaSegura.filter(t => t.categoria === filtroCategoria);
 
-  if (loading) return <div style={{padding:'50px', textAlign:'center', color:'white'}}>Cargando gestión de equipos...</div>;
+  if (loading) return <div style={{padding:'50px', textAlign:'center', color:'white'}}>Cargando gestión...</div>;
 
   return (
     <div style={{paddingBottom:'80px', maxWidth:'1000px', margin:'0 auto'}}>
       <h1 style={{textAlign:'center', marginBottom:'30px', color:'white'}}>Gestión de Equipos</h1>
       
-      {/* Mensaje de error suave si falla */}
-      {error && <div style={{background:'#ef4444', color:'white', padding:'10px', borderRadius:'5px', marginBottom:'20px', textAlign:'center'}}>{error}</div>}
-
-      {/* BARRA DE FILTRO */}
       <div style={{
         background: '#1a1a1a', padding: '20px', borderRadius: '12px', marginBottom: '30px', border: '1px solid #333',
-        display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+        display: 'flex', alignItems: 'center', gap: '15px'
       }}>
         <label style={{fontWeight:'bold', color:'var(--gold)', fontSize:'1.1rem'}}>Filtrar:</label>
         <select 
@@ -85,17 +73,11 @@ function TeamsPage() {
         </select>
       </div>
 
-      {/* LISTA */}
-      <TeamList 
-        teams={equiposFiltrados} 
-        onTeamDeleted={fetchTeams} 
-        onEditClick={handleEditClick} 
-      />
+      <TeamList teams={equiposFiltrados} onTeamDeleted={fetchTeams} onEditClick={handleEditClick} />
       
       <div style={{margin: '40px 0', borderTop: '2px dashed #444'}}></div>
 
-      {/* FORMULARIOS */}
-      <div style={{background:'#1a1a1a', padding:'30px', borderRadius:'16px', border:'1px solid #333', boxShadow:'0 10px 30px rgba(0,0,0,0.5)'}}>
+      <div style={{background:'#1a1a1a', padding:'30px', borderRadius:'16px', border:'1px solid #333'}}>
         {editingTeam ? (
           <>
             <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px'}}>
@@ -114,5 +96,4 @@ function TeamsPage() {
     </div>
   );
 }
-
 export default TeamsPage;
