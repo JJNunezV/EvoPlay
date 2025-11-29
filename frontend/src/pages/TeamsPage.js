@@ -9,21 +9,21 @@ function TeamsPage() {
   const [teams, setTeams] = useState([]);
   const [editingTeam, setEditingTeam] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
-  const [loading, setLoading] = useState(true); // Estado de carga
-  const [error, setError] = useState(null);     // Estado de error
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchTeams = async () => {
     setLoading(true);
     try {
+      // Aseguramos la ruta con /api
       const response = await api.get('/api/equipos');
       
-      // 2. BLINDAJE: Verificamos si lo que llegó es realmente una lista
+      // 2. Verificamos si la respuesta es válida
       if (Array.isArray(response.data)) {
         setTeams(response.data);
         setError(null);
       } else {
-        console.error("El servidor no devolvió una lista:", response.data);
-        setTeams([]); // Si llega basura, usamos lista vacía para no crashear
+        setTeams([]); // Si llega basura, usamos lista vacía
       }
     } catch (err) {
       console.error("Error al obtener los equipos", err);
@@ -34,7 +34,9 @@ function TeamsPage() {
     }
   };
 
-  useEffect(() => { fetchTeams(); }, []);
+  useEffect(() => {
+    fetchTeams();
+  }, []);
 
   const handleEditClick = (team) => {
     setEditingTeam(team);
@@ -47,24 +49,23 @@ function TeamsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 3. BLINDAJE DEL FILTRO: Nos aseguramos que 'teams' sea un array antes de filtrar
+  // 3. BLINDAJE: Filtramos sobre una lista segura
   const listaSegura = Array.isArray(teams) ? teams : [];
   
   const equiposFiltrados = filtroCategoria === 'Todos' 
     ? listaSegura 
     : listaSegura.filter(t => t.categoria === filtroCategoria);
 
-  // 4. Si está cargando, mostramos aviso en vez de explotar
   if (loading) return <div style={{padding:'50px', textAlign:'center', color:'white'}}>Cargando gestión de equipos...</div>;
 
   return (
     <div style={{paddingBottom:'80px', maxWidth:'1000px', margin:'0 auto'}}>
       <h1 style={{textAlign:'center', marginBottom:'30px', color:'white'}}>Gestión de Equipos</h1>
       
-      {/* Mensaje de error si existe */}
+      {/* Mensaje de error suave si falla */}
       {error && <div style={{background:'#ef4444', color:'white', padding:'10px', borderRadius:'5px', marginBottom:'20px', textAlign:'center'}}>{error}</div>}
 
-      {/* FILTRO */}
+      {/* BARRA DE FILTRO */}
       <div style={{
         background: '#1a1a1a', padding: '20px', borderRadius: '12px', marginBottom: '30px', border: '1px solid #333',
         display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
