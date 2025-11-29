@@ -5,24 +5,30 @@ import CreateTeamForm from '../components/CreateTeamForm';
 import EditTeamForm from '../components/EditTeamForm';
 
 function TeamsPage() {
-  // INICIALIZACIÓN SEGURA: Siempre es un array vacío
+  // Estados iniciales seguros
   const [teams, setTeams] = useState([]);
   const [editingTeam, setEditingTeam] = useState(null);
   const [filtroCategoria, setFiltroCategoria] = useState('Todos');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchTeams = async () => {
+    setLoading(true);
     try {
       const response = await api.get('/api/equipos');
-      // SIEMPRE verificamos que sea un array antes de guardarlo
+      
+      // Validación de seguridad: ¿Es un array?
       if (Array.isArray(response.data)) {
         setTeams(response.data);
+        setError(null);
       } else {
+        console.error("Datos inválidos:", response.data);
         setTeams([]); 
       }
     } catch (err) {
-      console.error("Error cargando equipos", err);
-      setTeams([]); // En error, array vacío para no congelar
+      console.error("Error de conexión:", err);
+      setError("No se pudo conectar con el servidor.");
+      setTeams([]);
     } finally {
       setLoading(false);
     }
@@ -34,29 +40,29 @@ function TeamsPage() {
 
   const handleEditClick = (team) => {
     setEditingTeam(team);
-    // Quitamos el scroll suave por si eso estuviera causando conflicto en algunos navegadores
-    window.scrollTo(0, document.body.scrollHeight);
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
   };
 
   const handleUpdateComplete = () => {
     setEditingTeam(null);
     fetchTeams();
-    window.scrollTo(0, 0);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
-  // FILTRADO A PRUEBA DE BALAS
-  // Si teams es null o undefined, usamos []
-  const safeTeams = teams || [];
+  // Filtrado seguro
+  const listaSegura = Array.isArray(teams) ? teams : [];
   const equiposFiltrados = filtroCategoria === 'Todos' 
-    ? safeTeams 
-    : safeTeams.filter(t => t.categoria === filtroCategoria);
+    ? listaSegura 
+    : listaSegura.filter(t => t.categoria === filtroCategoria);
 
-  if (loading) return <div style={{padding:'50px', textAlign:'center', color:'white'}}>Cargando equipos...</div>;
+  if (loading) return <div style={{padding:'50px', textAlign:'center', color:'white'}}>Cargando...</div>;
 
   return (
     <div style={{paddingBottom:'80px', maxWidth:'1000px', margin:'0 auto'}}>
       <h1 style={{textAlign:'center', marginBottom:'30px', color:'white'}}>Gestión de Equipos</h1>
       
+      {error && <div style={{background:'#ef4444', color:'white', padding:'10px', borderRadius:'5px', textAlign:'center', marginBottom:'20px'}}>⚠️ {error}</div>}
+
       {/* FILTRO */}
       <div style={{
         background: '#1a1a1a', padding: '20px', borderRadius: '12px', marginBottom: '30px', border: '1px solid #333',

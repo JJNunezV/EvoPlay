@@ -1,8 +1,8 @@
-// frontend/src/api.js
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://evoplay-vamb.onrender.com',
+  // 👇 CONFIRMA QUE ESTE LINK SEA TU BACKEND DE RENDER
+  baseURL: 'https://evoplay-vamb.onrender.com', 
 });
 
 api.interceptors.request.use(config => {
