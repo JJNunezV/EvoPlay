@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import api from '../api';
 
 function CreateTeamForm({ onTeamCreated }) {
-  // Estado inicial del formulario
+  // Estado inicial limpio
   const [formData, setFormData] = useState({
     nombre: '',
     logoUrl: '',
     categoria: 'Fútbol 7',
-    jugadores: [] // Lista de jugadores vacía al inicio
+    jugadores: [] 
   });
 
-  // Función para agregar una fila de jugador
+  // Función para agregar un jugador vacío a la lista visual
   const addPlayer = () => {
     setFormData({
       ...formData,
@@ -18,7 +18,7 @@ function CreateTeamForm({ onTeamCreated }) {
     });
   };
 
-  // Función para editar un jugador de la lista
+  // Función para editar un jugador específico
   const updatePlayer = (index, field, value) => {
     const newJugadores = [...formData.jugadores];
     newJugadores[index][field] = value;
@@ -34,24 +34,31 @@ function CreateTeamForm({ onTeamCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validación básica
-    if (!formData.nombre) return alert("El nombre del equipo es obligatorio");
+    // 1. Validación: El nombre es obligatorio
+    if (!formData.nombre.trim()) return alert("El nombre del equipo es obligatorio");
+
+    // 2. Limpieza: Quitamos jugadores sin nombre para no enviar basura
+    const jugadoresValidos = formData.jugadores.filter(j => j.nombre.trim() !== '');
+
+    const payload = {
+      ...formData,
+      jugadores: jugadoresValidos
+    };
 
     try {
-      // Enviamos los datos a la API
-      await api.post('/api/equipos', formData);
+      // 3. Enviamos al servidor
+      console.log("Enviando equipo:", payload); // Para depurar
+      await api.post('/api/equipos', payload);
       
       alert(`¡Equipo "${formData.nombre}" creado exitosamente!`);
       
-      // Limpiamos el formulario
+      // 4. Reset y aviso al padre
       setFormData({ nombre: '', logoUrl: '', categoria: 'Fútbol 7', jugadores: [] });
-      
-      // Avisamos a la página principal para que refresque la lista
-      onTeamCreated();
+      if(onTeamCreated) onTeamCreated();
       
     } catch (error) {
-      console.error('Error al crear:', error);
-      alert('Error al guardar el equipo. Revisa la consola.');
+      console.error('Error al crear:', error.response?.data || error);
+      alert('Error al guardar el equipo: ' + (error.response?.data?.message || error.message));
     }
   };
 
