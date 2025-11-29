@@ -2,20 +2,19 @@ const mongoose = require('mongoose');
 
 const jugadorSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
-  // 👇 Definimos las posiciones fijas
   posicion: { 
     type: String, 
     enum: ['Portero', 'Defensa', 'Medio', 'Delantero'], 
     default: 'Medio' 
   },
-  // 👇 Nuevo campo para saber si es titular o banca
   rol: {
     type: String,
     enum: ['Titular', 'Suplente'],
     default: 'Titular'
   },
   goles: { type: Number, default: 0 },
-  asistencias: { type: Number, default: 0 }
+  asistencias: { type: Number, default: 0 },
+  porteriasImbatidas: { type: Number, default: 0 } // 👈 NUEVO CAMPO
 });
 
 const equipoSchema = new mongoose.Schema({
