@@ -1,133 +1,166 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api';
 import UpcomingMatchesWidget from '../components/UpcomingMatchesWidget';
 import TopScorersWidget from '../components/TopScorersWidget';
 import RecentMatchesWidget from '../components/RecentMatchesWidget';
 
 function HomePage({ customConfig }) {
-  const [data, setData] = useState({
-    upcoming: [],
-    recent: [],
-    scorers: []
-  });
-  const [loading, setLoading] = useState(true);
-
-  // --- CONFIGURACIÓN VISUAL (Con valores por defecto si no hay nada en el Admin) ---
+  // 1. Configuración Inicial
   const safeConfig = customConfig || {};
-  
   const heroTitle = safeConfig.hero?.titulo || 'EVOPLAY LEAGUE';
-  const heroSubtitle = safeConfig.hero?.subtitulo || 'TORNEO OFICIAL';
-  // Esta es la foto por defecto (Estadio), pero si la cambias en el Admin, cambiará aquí.
+  const heroSubtitle = safeConfig.hero?.subtitulo || 'TORNEO CLAUSURA';
   const bgImage = safeConfig.hero?.imagenFondo || 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831';
 
-  // --- CARGA DE DATOS REALES ---
+  // 2. Lista de Deportes para el Carrusel
+  const categorias = ['Fútbol 7', 'Fútbol 11', 'Pádel', 'Voleibol'];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  
+  // Estado de datos
+  const [data, setData] = useState({ upcoming: [], recent: [], scorers: [] });
+  const [loading, setLoading] = useState(false);
+
+  // Categoría actual basada en el índice
+  const currentCategory = categorias[currentIndex];
+
+  // 3. Efecto de Reloj (Timer para cambiar de deporte)
+  useEffect(() => {
+    let interval;
+    if (!isPaused) {
+      interval = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % categorias.length);
+      }, 8000); // CAMBIA CADA 8 SEGUNDOS
+    }
+    return () => clearInterval(interval);
+  }, [isPaused, categorias.length]);
+
+  // 4. Carga de datos cada vez que cambia la categoría
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
         const [upRes, recRes, scRes] = await Promise.all([
-          api.get('/api/partidos/proximos'),
-          api.get('/api/partidos/recientes'),
-          api.get('/api/partidos/stats/top-players')
+          api.get(`/api/partidos/proximos?categoria=${currentCategory}`),
+          api.get(`/api/partidos/recientes?categoria=${currentCategory}`),
+          api.get(`/api/partidos/stats/top-players?categoria=${currentCategory}`)
         ]);
         
         setData({
           upcoming: Array.isArray(upRes.data) ? upRes.data : [],
           recent: Array.isArray(recRes.data) ? recRes.data : [],
-          scorers: scRes.data.goleadores && Array.isArray(scRes.data.goleadores) ? scRes.data.goleadores : []
+          scorers: scRes.data.goleadores || []
         });
       } catch (error) {
         console.error("Error cargando datos", error);
+        setData({ upcoming: [], recent: [], scorers: [] });
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [currentCategory]);
 
-  if (loading) {
-    return (
-      <div style={{height:'80vh', display:'flex', justifyContent:'center', alignItems:'center', color:'var(--gold)'}}>
-        <h2>Cargando...</h2>
-      </div>
-    );
-  }
+  // Animaciones
+  const variants = {
+    enter: { opacity: 0, x: 100 },
+    center: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -100 },
+  };
 
   return (
     <div>
-      {/* --- 1. HERO BANNER (La Foto Gigante) --- */}
+      {/* HERO BANNER FIJO */}
       <div className="hero-section" style={{
-        height: '70vh', // Altura del banner
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-        marginBottom: '50px',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        // Capa oscura sobre la imagen para que el texto resalte
-        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.4), var(--bg-dark)), url('${bgImage}')`
+        marginBottom: '30px',
+        height: '50vh', // Un poco más chico para dar protagonismo a los datos
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg-dark)), url('${bgImage}')`
       }}>
-        <div className="hero-content" style={{zIndex: 2, padding: '20px'}}>
-          <p style={{
-            color: 'var(--gold)', 
-            letterSpacing: '4px', 
-            fontWeight: 'bold', 
-            fontSize: '1.2rem',
-            marginBottom: '10px',
-            textTransform: 'uppercase'
-          }}>
-            {heroSubtitle}
-          </p>
-          <h1 style={{
-            fontSize: '4.5rem', 
-            margin: '0', 
-            color: 'white', 
-            textShadow: '0 4px 15px rgba(0,0,0,0.8)',
-            fontFamily: 'Oswald, sans-serif'
-          }}>
-            {heroTitle}
-          </h1>
+        <div className="hero-content">
+          <p style={{color:'var(--gold)', letterSpacing:'2px', fontWeight:'bold'}}>{heroSubtitle}</p>
+          <h1 style={{fontSize:'3.5rem', margin:'10px 0'}}>{heroTitle}</h1>
         </div>
       </div>
 
-      {/* --- 2. CONTENIDO (Partidos y Goleadores) --- */}
-      <div className="main-container" style={{maxWidth: '1200px', margin: '0 auto', padding: '0 20px 60px'}}>
-        <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '40px'}}>
+      {/* ÁREA DEL CARRUSEL DINÁMICO */}
+      <div 
+        className="main-container" 
+        onMouseEnter={() => setIsPaused(true)} // Pausa al pasar el mouse
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        
+        {/* Barra de Título del Deporte Actual */}
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', borderBottom:'1px solid #333', paddingBottom:'10px'}}>
+          <h2 style={{margin:0, fontSize:'2rem', color:'white'}}>
+            Resumen de <span style={{color:'var(--gold)'}}>{currentCategory}</span>
+          </h2>
           
-          {/* Columna Izquierda */}
-          <div style={{display:'flex', flexDirection:'column', gap:'40px'}}>
-            
-            {/* Widget Próximos */}
-            <div>
-               <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'15px', marginBottom:'20px', color:'white'}}>
-                 🔥 Próximos Encuentros
-               </h2>
-               <UpcomingMatchesWidget matches={data.upcoming} />
-            </div>
-
-            {/* Widget Resultados */}
-            <div>
-               <h2 style={{borderLeft:'4px solid #4ade80', paddingLeft:'15px', marginBottom:'20px', color:'white'}}>
-                 📊 Resultados Recientes
-               </h2>
-               <RecentMatchesWidget matches={data.recent} />
-            </div>
-
+          {/* Indicadores de puntitos */}
+          <div style={{display:'flex', gap:'10px'}}>
+            {categorias.map((cat, idx) => (
+              <div 
+                key={cat} 
+                onClick={() => setCurrentIndex(idx)}
+                style={{
+                  width: '12px', height: '12px', borderRadius: '50%', cursor:'pointer',
+                  backgroundColor: idx === currentIndex ? 'var(--gold)' : '#333',
+                  transition: '0.3s'
+                }}
+                title={cat}
+              />
+            ))}
           </div>
-
-          {/* Columna Derecha */}
-          <div>
-            {/* Widget Goleadores */}
-            <div>
-               <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'15px', marginBottom:'20px', color:'white'}}>
-                 🏆 Goleadores
-               </h2>
-               <TopScorersWidget scorers={data.scorers} />
-            </div>
-          </div>
-
         </div>
+
+        {/* Contenido Animado */}
+        <div style={{minHeight: '400px', position: 'relative'}}>
+          <AnimatePresence mode='wait'>
+            <motion.div
+              key={currentCategory} // La clave hace que React detecte el cambio y anime
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5 }}
+              style={{width: '100%'}}
+            >
+              {loading ? (
+                <div style={{textAlign:'center', padding:'50px', color:'#666'}}>Cargando datos de {currentCategory}...</div>
+              ) : (
+                <div className="dashboard-grid">
+                  
+                  {/* Columna Izquierda */}
+                  <div style={{display:'flex', flexDirection:'column', gap:'30px'}}>
+                    <div>
+                      <h3 style={{color:'#fff', borderLeft:'4px solid var(--gold)', paddingLeft:'10px'}}>📅 Próximos Partidos</h3>
+                      <UpcomingMatchesWidget matches={data.upcoming} />
+                    </div>
+                    <div>
+                      <h3 style={{color:'#fff', borderLeft:'4px solid #4ade80', paddingLeft:'10px'}}>📊 Resultados</h3>
+                      <RecentMatchesWidget matches={data.recent} />
+                    </div>
+                  </div>
+
+                  {/* Columna Derecha */}
+                  <div>
+                    <h3 style={{color:'#fff', borderLeft:'4px solid var(--gold)', paddingLeft:'10px'}}>🏆 Líderes</h3>
+                    <TopScorersWidget scorers={data.scorers} />
+                    
+                    {/* Widget Info Extra */}
+                    <div className="widget" style={{marginTop: '20px', background: 'linear-gradient(45deg, #111, #222)'}}>
+                       <small style={{color:'var(--gold)', fontWeight:'bold'}}>NOTA:</small>
+                       <p style={{fontSize:'0.9rem', color:'#aaa', margin:'5px 0'}}>
+                         Mostrando estadísticas en tiempo real para la liga de {currentCategory}.
+                       </p>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
       </div>
     </div>
   );
