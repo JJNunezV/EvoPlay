@@ -6,25 +6,34 @@ import RecentMatchesWidget from '../components/RecentMatchesWidget';
 
 function HomePage({ customConfig }) {
   const [data, setData] = useState({ upcoming: [], recent: [], scorers: [] });
-  const [loading, setLoading] = useState(true);
-
-  // Configuración segura
-  const safeConfig = customConfig || {};
-  const heroTitle = safeConfig.hero?.titulo || 'EVOPLAY LEAGUE';
-  const heroSubtitle = safeConfig.hero?.subtitulo || 'TORNEO CLAUSURA';
-  const bgImage = safeConfig.hero?.imagenFondo || 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831';
   
-  // Widgets por defecto si no hay config
-  const widgetsDefault = [
-    { type: 'banner', title: 'Bienvenido', isVisible: true },
-    { type: 'upcoming', title: 'Próximos Partidos', isVisible: true },
-    { type: 'recent', title: 'Resultados', isVisible: true },
-    { type: 'scorers', title: 'Goleadores', isVisible: true }
-  ];
+  // --- CONFIGURACIÓN POR DEFECTO (PLAN B) ---
+  // Si customConfig viene vacío, usamos esto para que NO se vea nada en blanco
+  const defaultConfig = {
+    hero: {
+      titulo: 'EVOPLAY LEAGUE',
+      subtitulo: 'TORNEO OFICIAL',
+      imagenFondo: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?q=80&w=2831'
+    },
+    pages: {
+      home: [
+        { type: 'banner', title: 'Banner', isVisible: true },
+        { type: 'upcoming', title: 'Próximos Partidos', isVisible: true },
+        { type: 'recent', title: 'Resultados Recientes', isVisible: true },
+        { type: 'scorers', title: 'Tabla de Goleadores', isVisible: true }
+      ]
+    }
+  };
 
-  const widgets = (safeConfig.pages?.home && Array.isArray(safeConfig.pages.home) && safeConfig.pages.home.length > 0) 
-    ? safeConfig.pages.home 
-    : widgetsDefault;
+  // Mezclamos la config que llega con la default
+  const finalConfig = customConfig && customConfig.pages?.home?.length > 0 
+    ? customConfig 
+    : defaultConfig;
+
+  const heroTitle = finalConfig.hero?.titulo || defaultConfig.hero.titulo;
+  const heroSubtitle = finalConfig.hero?.subtitulo || defaultConfig.hero.subtitulo;
+  const bgImage = finalConfig.hero?.imagenFondo || defaultConfig.hero.imagenFondo;
+  const widgets = finalConfig.pages?.home || defaultConfig.pages.home;
 
   useEffect(() => {
     const loadData = async () => {
@@ -42,17 +51,16 @@ function HomePage({ customConfig }) {
         });
       } catch (error) {
         console.error("Error cargando datos", error);
-        // Si falla, dejamos vacíos
-      } finally {
-        setLoading(false);
       }
     };
     loadData();
   }, []);
 
   const renderWidget = (widget, index) => {
-    if (!widget || !widget.isVisible) return null;
-    const title = <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'10px', marginBottom:'20px'}}>{widget.title}</h2>;
+    if (!widget.isVisible) return null;
+    
+    // Título dorado
+    const title = <h2 style={{borderLeft:'4px solid var(--gold)', paddingLeft:'10px', marginBottom:'20px', color:'white'}}>{widget.title}</h2>;
 
     switch (widget.type) {
       case 'banner':
@@ -74,8 +82,6 @@ function HomePage({ customConfig }) {
       default: return null;
     }
   };
-
-  if (loading) return <div style={{height:'50vh', display:'flex', justifyContent:'center', alignItems:'center'}}>Cargando...</div>;
 
   return (
     <div>
