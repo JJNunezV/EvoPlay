@@ -1,19 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const Equipo = require('../models/equipoModel');
+// 👇 ESTA LÍNEA FALTABA 👇
 const auth = require('../middleware/authMiddleware');
 
 // --- Rutas PÚBLICAS ---
 
+// GET: Obtener todos los equipos (con filtro opcional)
 router.get('/', async (req, res) => {
   try {
-    const equipos = await Equipo.find();
+    const { categoria } = req.query;
+    const filtro = categoria && categoria !== 'Todos' ? { categoria } : {};
+    const equipos = await Equipo.find(filtro);
     res.json(equipos);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener los equipos' });
   }
 });
 
+// GET: Obtener un equipo por ID
 router.get('/:id', async (req, res) => {
   try {
     const equipo = await Equipo.findById(req.params.id);
@@ -24,9 +29,13 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET: Obtener goleadores
 router.get('/stats/goleadores', async (req, res) => {
    try {
-    const equipos = await Equipo.find();
+    const categoria = req.query.categoria;
+    const filtro = categoria && categoria !== 'Todos' ? { categoria } : {};
+    const equipos = await Equipo.find(filtro);
+    
     const todosLosJugadores = [];
     equipos.forEach(equipo => {
       equipo.jugadores.forEach(jugador => {
@@ -36,7 +45,7 @@ router.get('/stats/goleadores', async (req, res) => {
             goles: jugador.goles,
             nombreEquipo: equipo.nombre,
             logoEquipo: equipo.logoUrl,
-            categoria: equipo.categoria // También mandamos la categoría por si acaso
+            categoria: equipo.categoria
           });
         }
       });
@@ -48,17 +57,18 @@ router.get('/stats/goleadores', async (req, res) => {
   }
 });
 
-// --- Rutas PROTEGIDAS ---
 
-// POST: Crear equipo (ACTUALIZADO CON CATEGORIA)
+// --- Rutas PROTEGIDAS (Requieren Login) ---
+
+// POST: Crear equipo
 router.post('/', auth, async (req, res) => {
-  const { nombre, logoUrl, jugadores, categoria } = req.body; // <-- Recibimos categoria
+  const { nombre, logoUrl, jugadores, categoria } = req.body;
   
   const nuevoEquipo = new Equipo({ 
     nombre, 
     logoUrl, 
     jugadores,
-    categoria: categoria || 'Fútbol 7' // Si no mandan nada, ponemos Futbol 7 por defecto
+    categoria: categoria || 'Fútbol 7'
   });
 
   try {
@@ -69,10 +79,9 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT: Actualizar equipo (ACTUALIZADO)
+// PUT: Editar equipo
 router.put('/:id', auth, async (req, res) => {
    try {
-    // req.body ya trae la categoría actualizada
     const equipoActualizado = await Equipo.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!equipoActualizado) return res.status(404).json({ message: 'No se encontró el equipo' });
     res.json(equipoActualizado);
@@ -81,6 +90,7 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
+// DELETE: Borrar equipo
 router.delete('/:id', auth, async (req, res) => {
   try {
     const equipoBorrado = await Equipo.findByIdAndDelete(req.params.id);
