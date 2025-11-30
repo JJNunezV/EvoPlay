@@ -1,51 +1,65 @@
 import React from 'react';
-import { FaInstagram, FaTwitter, FaFacebookF } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEnvelope, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
 
-// Recibimos 'customConfig' como propiedad desde App.js
 function Footer({ customConfig }) {
   
-  // Valores dinámicos
-  const footerText = customConfig?.footer?.texto || 'La plataforma exclusiva para la gestión deportiva de alto nivel.';
+  // Valores dinámicos desde el Admin (o defaults si no hay nada)
+  const brandText = customConfig?.footer?.texto || 'La plataforma líder para la gestión de ligas deportivas profesionales y amateurs.';
   const contactEmail = customConfig?.footer?.contacto || 'contacto@evoplay.com';
+  
+  // Obtener colores de la config para el logo
   const primaryColor = customConfig?.colores?.primary || '#c5a059';
 
   return (
-    <footer className="luxury-footer">
-      <div className="footer-content">
+    <footer className="premium-footer">
+      <div className="footer-container">
         
-        {/* Sección 1: Marca Dinámica */}
-        <div className="footer-section">
-          {/* Usamos el color primario configurado */}
-          <h2 style={{color: primaryColor, marginTop:0}}>EVOPLAY</h2>
-          <p>{footerText}</p>
+        {/* COLUMNA 1: MARCA */}
+        <div className="footer-brand">
+          <h2>EVO<span style={{color: primaryColor}}>PLAY</span></h2>
+          <p>{brandText}</p>
+          <div className="social-icons">
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="social-btn"><FaFacebookF /></a>
+            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="social-btn"><FaInstagram /></a>
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="social-btn"><FaTwitter /></a>
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="social-btn"><FaYoutube /></a>
+          </div>
         </div>
 
-        {/* Sección 2: Enlaces */}
-        <div className="footer-section">
-          <h4>NAVEGACIÓN</h4>
-          <a href="/">Inicio</a>
-          <a href="/partidos">Calendario</a>
-          <a href="/tabla">Estadísticas</a>
-          <a href="/login">Admin</a>
+        {/* COLUMNA 2: NAVEGACIÓN */}
+        <div className="footer-links">
+          <h3>Explorar</h3>
+          <ul>
+            <li><Link to="/">Inicio</Link></li>
+            <li><Link to="/partidos">Calendario de Juegos</Link></li>
+            <li><Link to="/tabla">Tabla General</Link></li>
+            <li><Link to="/login">Acceso Administrativo</Link></li>
+          </ul>
         </div>
 
-        {/* Sección 3: Contacto Dinámico */}
-        <div className="footer-section">
-          <h4>CONTACTO</h4>
-          <p>{contactEmail}</p>
-          <p>Guadalajara, Jalisco, MX</p>
-          
-          <div style={{marginTop: '20px', display:'flex', gap:'15px', justifyContent: 'center'}}>
-            <FaInstagram size={20} color="white" style={{cursor:'pointer'}} />
-            <FaTwitter size={20} color="white" style={{cursor:'pointer'}} />
-            <FaFacebookF size={20} color="white" style={{cursor:'pointer'}} />
+        {/* COLUMNA 3: CONTACTO OFICIAL */}
+        <div className="footer-contact">
+          <h3>Contacto Oficial</h3>
+          <div className="contact-item">
+            <FaMapMarkerAlt style={{color: primaryColor}} />
+            <span>Guadalajara, Jalisco, México</span>
+          </div>
+          <div className="contact-item">
+            <FaEnvelope style={{color: primaryColor}} />
+            <span>{contactEmail}</span>
+          </div>
+          <div className="contact-item">
+            <FaPhone style={{color: primaryColor}} />
+            <span>+52 (33) 1234 5678</span>
           </div>
         </div>
 
       </div>
 
+      {/* BARRA INFERIOR */}
       <div className="footer-bottom">
-        &copy; {new Date().getFullYear()} EvoPlay. Todos los derechos reservados. Diseño Premium.
+        <p>&copy; {new Date().getFullYear()} EvoPlay League. Todos los derechos reservados.</p>
       </div>
     </footer>
   );
